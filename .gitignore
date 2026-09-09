@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.local
+.DS_Store
+*.log
+data/*.db
+data/relatorio_*.txt
+data/relatorio_*.csv
+*.swp
+*.swo
+.vscode/
+.idea/
