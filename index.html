@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculador de Economia Solar - Energia Renovável</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Header/Navbar -->
+    <header class="navbar">
+        <div class="container">
+            <div class="navbar-content">
+                <div class="logo">
+                    <i class="fas fa-sun"></i>
+                    <span>SolarCalc</span>
+                </div>
+                <nav class="nav-links">
+                    <a href="#" class="nav-link">Início</a>
+                    <a href="#calculador" class="nav-link">Calculador</a>
+                    <a href="#resultados" class="nav-link">Resultados</a>
+                    <a href="#historico" class="nav-link">Histórico</a>
+                </nav>
+                <div class="theme-toggle">
+                    <button id="themeBtn" class="theme-btn" title="Alternar tema">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Calcule sua Economia com Energia Solar</h1>
+                <p>Descubra quanto você pode economizar adotando painéis solares em sua residência</p>
+                <a href="#calculador" class="btn btn-primary">Começar Cálculo</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Seção do Calculador -->
+        <section id="calculador" class="section">
+            <h2 class="section-title">Simulador de Economia Solar</h2>
+            
+            <div class="calculator-container">
+                <!-- Formulário -->
+                <div class="form-section">
+                    <h3><i class="fas fa-edit"></i> Dados da sua Residência</h3>
+                    
+                    <form id="calculadorForm">
+                        <!-- Linha 1 -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="consumoMensal">
+                                    <i class="fas fa-plug"></i> Consumo Mensal (kWh)
+                                </label>
+                                <input 
+                                    type="number" 
+                                    id="consumoMensal" 
+                                    name="consumoMensal" 
+                                    placeholder="Ex: 300"
+                                    min="50"
+                                    max="5000"
+                                    step="10"
+                                    required
+                                >
+                                <small>Verifique sua conta de energia</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tarifaEnergia">
+                                    <i class="fas fa-dollar-sign"></i> Tarifa (R$/kWh)
+                                </label>
+                                <input 
+                                    type="number" 
+                                    id="tarifaEnergia" 
+                                    name="tarifaEnergia" 
+                                    placeholder="Ex: 0.85"
+                                    min="0.10"
+                                    max="2.00"
+                                    step="0.01"
+                                    required
+                                >
+                                <small>Tarifa média do seu estado</small>
+                            </div>
+                        </div>
+
+                        <!-- Linha 2 -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="numPessoas">
+                                    <i class="fas fa-users"></i> Número de Pessoas
+                                </label>
+                                <select id="numPessoas" name="numPessoas" required>
+                                    <option value="">Selecione</option>
+                                    <option value="1">1 pessoa</option>
+                                    <option value="2">2 pessoas</option>
+                                    <option value="3">3 pessoas</option>
+                                    <option value="4">4 pessoas</option>
+                                    <option value="5">5 pessoas</option>
+                                    <option value="6">6+ pessoas</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tipoResidencia">
+                                    <i class="fas fa-home"></i> Tipo de Residência
+                                </label>
+                                <select id="tipoResidencia" name="tipoResidencia" required>
+                                    <option value="">Selecione</option>
+                                    <option value="apartamento">Apartamento</option>
+                                    <option value="casa">Casa</option>
+                                    <option value="comercial">Comercial</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Linha 3 -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="areaDisponivel">
+                                    <i class="fas fa-expand"></i> Área Disponível para Painéis (m²)
+                                </label>
+                                <input 
+                                    type="number" 
+                                    id="areaDisponivel" 
+                                    name="areaDisponivel" 
+                                    placeholder="Ex: 40"
+                                    min="5"
+                                    max="500"
+                                    step="1"
+                                    required
+                                >
+                                <small>Telhado, quintal ou garagem</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="regiao">
+                                    <i class="fas fa-map-marker-alt"></i> Região/Estado
+                                </label>
+                                <select id="regiao" name="regiao" required>
+                                    <option value="">Selecione</option>
+                                    <option value="norte" data-irradiacao="4.5">Norte (4.5 kWh/m²/dia)</option>
+                                    <option value="nordeste" data-irradiacao="5.2">Nordeste (5.2 kWh/m²/dia)</option>
+                                    <option value="centro-oeste" data-irradiacao="5.5">Centro-Oeste (5.5 kWh/m²/dia)</option>
+                                    <option value="sudeste" data-irradiacao="4.8">Sudeste (4.8 kWh/m²/dia)</option>
+                                    <option value="sul" data-irradiacao="4.3">Sul (4.3 kWh/m²/dia)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Linha 4 - Investimento -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="custoPainel">
+                                    <i class="fas fa-coins"></i> Custo por Painel (R$)
+                                </label>
+                                <input 
+                                    type="number" 
+                                    id="custoPainel" 
+                                    name="custoPainel" 
+                                    placeholder="Ex: 1500"
+                                    min="500"
+                                    max="5000"
+                                    step="100"
+                                    value="2000"
+                                    required
+                                >
+                                <small>Custo estimado incluindo instalação</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="anos">
+                                    <i class="fas fa-calendar-alt"></i> Período de Análise (Anos)
+                                </label>
+                                <input 
+                                    type="number" 
+                                    id="anos" 
+                                    name="anos" 
+                                    placeholder="Ex: 25"
+                                    min="1"
+                                    max="50"
+                                    step="1"
+                                    value="25"
+                                    required
+                                >
+                                <small>Vida útil dos painéis solares</small>
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-calculator"></i> Calcular Economia
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                <i class="fas fa-redo"></i> Limpar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Cards de Resultados Rápidos -->
+                <div class="quick-results">
+                    <div class="result-card">
+                        <div class="result-icon">
+                            <i class="fas fa-plug"></i>
+                        </div>
+                        <div class="result-content">
+                            <p class="result-label">Consumo Anual</p>
+                            <p class="result-value" id="consumoAnualDisplay">-</p>
+                            <p class="result-unit">kWh/ano</p>
+                        </div>
+                    </div>
+
+                    <div class="result-card">
+                        <div class="result-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="result-content">
+                            <p class="result-label">Custo Anual</p>
+                            <p class="result-value" id="custoAnualDisplay">-</p>
+                            <p class="result-unit">R$/ano</p>
+                        </div>
+                    </div>
+
+                    <div class="result-card">
+                        <div class="result-icon">
+                            <i class="fas fa-solar-panel"></i>
+                        </div>
+                        <div class="result-content">
+                            <p class="result-label">Painéis Necessários</p>
+                            <p class="result-value" id="numPaineisDisplay">-</p>
+                            <p class="result-unit">unidades</p>
+                        </div>
+                    </div>
+
+                    <div class="result-card highlight">
+                        <div class="result-icon">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <div class="result-content">
+                            <p class="result-label">Economia Anual</p>
+                            <p class="result-value" id="economiaAnualDisplay">-</p>
+                            <p class="result-unit">R$/ano</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seção de Resultados Detalhados -->
+        <section id="resultados" class="section" style="display: none;">
+            <h2 class="section-title">Análise Detalhada</h2>
+
+            <!-- Dashboard de Métricas -->
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h3>Investimento Inicial</h3>
+                    <p class="metric-value" id="investimentoInicial">R$ 0</p>
+                    <p class="metric-desc">Custo total da instalação</p>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3>Economia 1º Ano</h3>
+                    <p class="metric-value" id="economia1Ano">R$ 0</p>
+                    <p class="metric-desc">Economia no primeiro ano</p>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3>ROI Anual</h3>
+                    <p class="metric-value" id="roiAnual">0%</p>
+                    <p class="metric-desc">Retorno sobre investimento</p>
+                </div>
+
+                <div class="dashboard-card highlight-card">
+                    <h3>Tempo de Payback</h3>
+                    <p class="metric-value" id="paybackTime">-</p>
+                    <p class="metric-desc">Tempo para recuperar investimento</p>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3>Economia Total (25 anos)</h3>
+                    <p class="metric-value" id="economiaTotal">R$ 0</p>
+                    <p class="metric-desc">Economia acumulada</p>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3>CO₂ Não Emitido</h3>
+                    <p class="metric-value" id="co2Evitado">0 ton</p>
+                    <p class="metric-desc">Emissões evitadas por ano</p>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Comparativo de Custos Anuais</h3>
+                    <canvas id="chartCustos"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Acumulado ao Longo dos Anos</h3>
+                    <canvas id="chartAcumulado"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Consumo vs Produção Solar</html>
+                    <canvas id="chartConsumo"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Simulação Mensal (Primeiro Ano)</h3>
+                    <canvas id="chartMensal"></canvas>
+                </div>
+            </div>
+
+            <!-- Tabela de Simulação Anual -->
+            <div class="table-section">
+                <h3>Simulação Anual Detalhada</h3>
+                <div class="table-wrapper">
+                    <table class="simulation-table" id="simulationTable">
+                        <thead>
+                            <tr>
+                                <th>Ano</th>
+                                <th>Custo Convencional</th>
+                                <th>Produção Solar</th>
+                                <th>Economia Anual</th>
+                                <th>Economia Acumulada</th>
+                                <th>Lucro Líquido</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr>
+                                <td colspan="6" class="text-center">Preencha o formulário e clique em Calcular</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="action-buttons">
+                <button id="exportPDFBtn" class="btn btn-primary">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </button>
+                <button id="salvarCalculoBtn" class="btn btn-success">
+                    <i class="fas fa-save"></i> Salvar Cálculo
+                </button>
+                <button id="compartilharBtn" class="btn btn-info">
+                    <i class="fas fa-share-alt"></i> Compartilhar
+                </button>
+            </div>
+        </section>
+
+        <!-- Seção de Histórico -->
+        <section id="historico" class="section" style="display: none;">
+            <h2 class="section-title">Histórico de Cálculos</h2>
+            
+            <div id="historicoContainer" class="historico-grid">
+                <p class="text-center">Nenhum cálculo salvo ainda</p>
+            </div>
+        </section>
+
+        <!-- Seção de Informações -->
+        <section class="info-section">
+            <h2 class="section-title">Como Funciona?</h2>
+            
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3>Preencha os Dados</h3>
+                    <p>Insira informações sobre sua residência, consumo de energia e localização geográfica.</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <h3>Cálculo Automático</h3>
+                    <p>Nossa ferramenta calcula potência necessária, quantidade de painéis e tempo de retorno.</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Visualize Resultados</h3>
+                    <p>Veja gráficos detalhados, simulações anuais e indicadores de economia e ROI.</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-icon">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <h3>Impacto Ambiental</h3>
+                    <p>Descubra quanto CO₂ você deixará de emitir adotando energia solar.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>SolarCalc</h4>
+                    <p>Simulador de economia com energia solar para residências brasileiras.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links Úteis</h4>
+                    <ul>
+                        <li><a href="#">Sobre</a></li>
+                        <li><a href="#">Privacidade</a></li>
+                        <li><a href="#">Contato</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Redes Sociais</h4>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 SolarCalc. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+</body>
+</html>
