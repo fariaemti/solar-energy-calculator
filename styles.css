@@ -960,3 +960,40 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--primary-dark);
 }
+
+//
+
+/* Correções para o Modo Escuro nos Cards e Inputs */
+body.dark-mode .form-section,
+body.dark-mode .result-card,
+body.dark-mode .dashboard-card,
+body.dark-mode .chart-container,
+body.dark-mode .table-section,
+body.dark-mode .info-card,
+body.dark-mode .navbar,
+body.dark-mode .info-section {
+    background-color: var(--bg-white);
+    color: var(--text-dark);
+}
+
+body.dark-mode input,
+body.dark-mode select {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .form-section h3,
+body.dark-mode .form-group label,
+body.dark-mode .result-value,
+body.dark-mode .chart-container h3,
+body.dark-mode .table-section h3,
+body.dark-mode .info-card h3,
+body.dark-mode .nav-link {
+    color: var(--text-dark);
+}
+
+body.dark-mode .simulation-table td {
+    color: var(--text-dark);
+    border-color: var(--border-color);
+}
