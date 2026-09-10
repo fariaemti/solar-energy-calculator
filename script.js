@@ -1,5 +1,5 @@
 /* ========================================
-   SOLAR ENERGY CALCULATOR - JavaScript
+   CALCULADORA DO EMTI - JavaScript
    Cálculos de economia energética e gerenciamento de dados
    ======================================== */
 
@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inicializarEventos();
     carregarHistorico();
     aplicarTemaSalvo();
+    inicializarMobile();
 });
 
 // ==========================================
@@ -746,6 +747,7 @@ function exportarPDF() {
     // Criar conteúdo do PDF
     let conteudo = `
 RELATÓRIO DE SIMULAÇÃO DE ECONOMIA SOLAR
+Calculadora do EMTI
 =========================================
 
 DATA: ${calc.timestamp}
@@ -776,7 +778,7 @@ Ano ${s.ano}:
   - Economia Acumulada: R$ ${formatarNumero(s.economiaAcumulada)}
 `).join('')}
 
-Gerado por SolarCalc
+Gerado por Calculadora do EMTI
     `;
     
     // Criar blob e download
@@ -810,12 +812,13 @@ Simulei minha economia com energia solar! 🌞
 - R$ ${formatarNumero(calc.economiaAnual)}/ano de economia
 - Payback em ${calc.paybackTime} anos
 
-Calcule a sua economia em: ${window.location.href}
+Calcule a sua economia com a Calculadora do EMTI:
+${window.location.href}
     `;
     
     if (navigator.share) {
         navigator.share({
-            title: 'Calculador de Economia Solar',
+            title: 'Calculadora do EMTI - Economia Solar',
             text: texto,
             url: window.location.href
         });
@@ -912,4 +915,112 @@ function formatarMoeda(valor) {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
+}
+
+// ==========================================
+// MOBILE COMPATIBILITY
+// ==========================================
+
+/**
+ * Inicializa funcionalidades mobile
+ */
+function inicializarMobile() {
+    // Detectar dispositivo mobile
+    if (ehMobile()) {
+        document.body.classList.add('mobile');
+        inicializarMenuMobile();
+        otimizarInputsMobile();
+        detectarOrientacao();
+        lidarMudancaOrientacao();
+    }
+}
+
+/**
+ * Detectar dispositivo mobile
+ */
+function ehMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+/**
+ * Inicializa menu mobile hamburger
+ */
+function inicializarMenuMobile() {
+    const navbarContent = document.querySelector('.navbar-content');
+    if (!navbarContent || document.querySelector('.menu-toggle')) return;
+    
+    const menuToggle = document.createElement('button');
+    menuToggle.className = 'menu-toggle';
+    menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+    menuToggle.setAttribute('title', 'Menu');
+    
+    const navLinks = document.querySelector('.nav-links');
+    navbarContent.insertBefore(menuToggle, navLinks);
+    
+    menuToggle.addEventListener('click', toggleMenuMobile);
+    
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+            navLinks.classList.remove('active');
+            menuToggle.querySelector('i').className = 'fas fa-bars';
+        });
+    });
+}
+
+/**
+ * Toggle do menu mobile
+ */
+function toggleMenuMobile() {
+    const navLinks = document.querySelector('.nav-links');
+    const menuToggle = document.querySelector('.menu-toggle i');
+    
+    if (navLinks.classList.contains('active')) {
+        navLinks.classList.remove('active');
+        menuToggle.className = 'fas fa-bars';
+    } else {
+        navLinks.classList.add('active');
+        menuToggle.className = 'fas fa-times';
+    }
+}
+
+/**
+ * Detectar orientação
+ */
+function detectarOrientacao() {
+    if (window.matchMedia('(orientation: portrait)').matches) {
+        document.body.classList.add('portrait');
+        document.body.classList.remove('landscape');
+    } else {
+        document.body.classList.add('landscape');
+        document.body.classList.remove('portrait');
+    }
+}
+
+/**
+ * Lidar com mudança de orientação
+ */
+function lidarMudancaOrientacao() {
+    window.addEventListener('orientationchange', () => {
+        detectarOrientacao();
+        setTimeout(() => {
+            if (calculoAtual) {
+                atualizarGraficos();
+            }
+        }, 300);
+    });
+}
+
+/**
+ * Otimizar inputs para mobile
+ */
+function otimizarInputsMobile() {
+    document.querySelectorAll('input, select, textarea').forEach(input => {
+        input.style.fontSize = '16px';
+    });
+    
+    document.getElementById('consumoMensal').setAttribute('inputmode', 'decimal');
+    document.getElementById('tarifaEnergia').setAttribute('inputmode', 'decimal');
+    document.getElementById('areaDisponivel').setAttribute('inputmode', 'decimal');
+    document.getElementById('custoPainel').setAttribute('inputmode', 'decimal');
+    document.getElementById('anos').setAttribute('inputmode', 'numeric');
 }
