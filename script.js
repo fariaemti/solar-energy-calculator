@@ -1023,4 +1023,31 @@ function otimizarInputsMobile() {
     document.getElementById('areaDisponivel').setAttribute('inputmode', 'decimal');
     document.getElementById('custoPainel').setAttribute('inputmode', 'decimal');
     document.getElementById('anos').setAttribute('inputmode', 'numeric');
+
+   //
+
+   document.addEventListener('DOMContentLoaded', () => {
+    const themeBtn = document.getElementById('themeBtn');
+    const icon = themeBtn.querySelector('.material-symbols-outlined');
+
+    // 1. Verifica se o usuário já salvou uma preferência anterior
+    const currentTheme = localStorage.getItem('theme');
+    if (currentTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        icon.textContent = 'light_mode'; // Muda o ícone para o sol
+    }
+
+    // 2. Alterna o tema ao clicar no botão
+    themeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark-theme');
+        
+        const isDark = document.body.classList.contains('dark-theme');
+        
+        // Atualiza o ícone do Material Symbols
+        icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+        
+        // Salva a preferência no navegador
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+});
 }
