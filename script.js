@@ -1028,26 +1028,30 @@ function otimizarInputsMobile() {
 
    document.addEventListener('DOMContentLoaded', () => {
     const themeBtn = document.getElementById('themeBtn');
+    
+    if (!themeBtn) return;
+
     const icon = themeBtn.querySelector('.material-symbols-outlined');
 
-    // 1. Verifica se o usuário já salvou uma preferência anterior
+    // 1. Carrega a preferência salva no localStorage
     const currentTheme = localStorage.getItem('theme');
     if (currentTheme === 'dark') {
-        document.body.classList.add('dark-theme');
-        icon.textContent = 'light_mode'; // Muda o ícone para o sol
+        document.body.classList.add('dark-mode');
+        if (icon) icon.textContent = 'light_mode';
     }
 
-    // 2. Alterna o tema ao clicar no botão
+    // 2. Evento para alternar o tema ao clicar
     themeBtn.addEventListener('click', () => {
-        document.body.classList.toggle('dark-theme');
+        document.body.classList.toggle('dark-mode');
         
-        const isDark = document.body.classList.contains('dark-theme');
+        const isDark = document.body.classList.contains('dark-mode');
         
-        // Atualiza o ícone do Material Symbols
-        icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+        // Atualiza o texto do ícone do Google Material Symbols
+        if (icon) {
+            icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+        }
         
-        // Salva a preferência no navegador
+        // Salva a escolha do usuário
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
     });
 });
-}
