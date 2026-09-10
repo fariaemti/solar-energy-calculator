@@ -1026,32 +1026,60 @@ function otimizarInputsMobile() {
 
    //
 
-   document.addEventListener('DOMContentLoaded', () => {
-    const themeBtn = document.getElementById('themeBtn');
+   // ==========================================
+// TEMA ESCURO/CLARO (Versão Unificada)
+// ==========================================
+
+/**
+ * Alterna entre tema claro e escuro no body
+ */
+function toggleTema() {
+    const isDark = document.body.classList.toggle('dark-mode');
     
-    if (!themeBtn) return;
-
-    const icon = themeBtn.querySelector('.material-symbols-outlined');
-
-    // 1. Carrega a preferência salva no localStorage
-    const currentTheme = localStorage.getItem('theme');
-    if (currentTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        if (icon) icon.textContent = 'light_mode';
-    }
-
-    // 2. Evento para alternar o tema ao clicar
-    themeBtn.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        
-        const isDark = document.body.classList.contains('dark-mode');
-        
-        // Atualiza o texto do ícone do Google Material Symbols
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    
+    // Atualiza ícone do botão
+    const themeBtn = document.getElementById('themeBtn');
+    if (themeBtn) {
+        const icon = themeBtn.querySelector('i') || themeBtn.querySelector('.material-symbols-outlined');
         if (icon) {
-            icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+            // Se usar FontAwesome
+            if (icon.tagName === 'I') {
+                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+            } else { 
+                // Se usar Material Symbols
+                icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+            }
         }
-        
-        // Salva a escolha do usuário
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    });
-});
+    }
+    
+    // Recriar gráficos com novo tema se aplicável
+    if (calculoAtual) {
+        setTimeout(() => {
+            atualizarGraficos();
+        }, 100);
+    }
+}
+
+/**
+ * Aplica o tema salvo ao carregar a página
+ */
+function aplicarTemaSalvo() {
+    const tema = localStorage.getItem('theme') || 'light';
+    const themeBtn = document.getElementById('themeBtn');
+    const icon = themeBtn ? (themeBtn.querySelector('i') || themeBtn.querySelector('.material-symbols-outlined')) : null;
+    
+    if (tema === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (icon) {
+            if (icon.tagName === 'I') icon.className = 'fas fa-sun';
+            else icon.textContent = 'light_mode';
+        }
+    } else {
+        document.body.classList.remove('dark-mode');
+        if (icon) {
+            if (icon.tagName === 'I') icon.className = 'fas fa-moon';
+            else icon.textContent = 'dark_mode';
+        }
+    }
+}
