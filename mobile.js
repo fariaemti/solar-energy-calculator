@@ -7,19 +7,25 @@
 // ==========================================
 
 /**
- * Inicializa menu mobile hamburger
+ * Inicializa menu mobile hamburger com suporte ao Material Symbols
  */
 function inicializarMenuMobile() {
     const navbarContent = document.querySelector('.navbar-content');
+    if (!navbarContent) return;
     
     // Criar botão de menu se não existir
     if (!document.querySelector('.menu-toggle')) {
         const menuToggle = document.createElement('button');
         menuToggle.className = 'menu-toggle';
-        menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
-        menuToggle.setAttribute('title', 'Menu');
+        menuToggle.setAttribute('aria-label', 'Abrir Menu');
+        menuToggle.innerHTML = '<span class="material-symbols-outlined">menu</span>';
         
-        navbarContent.insertBefore(menuToggle, document.querySelector('.nav-links'));
+        const navLinks = document.querySelector('.nav-links');
+        if (navLinks) {
+            navbarContent.insertBefore(menuToggle, navLinks);
+        } else {
+            navbarContent.appendChild(menuToggle);
+        }
         
         menuToggle.addEventListener('click', toggleMenu);
     }
@@ -28,8 +34,11 @@ function inicializarMenuMobile() {
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', () => {
             if (window.innerWidth <= 768) {
-                document.querySelector('.nav-links').classList.remove('active');
-                document.querySelector('.menu-toggle i').className = 'fas fa-bars';
+                const navLinks = document.querySelector('.nav-links');
+                const menuIcon = document.querySelector('.menu-toggle .material-symbols-outlined');
+                
+                if (navLinks) navLinks.classList.remove('active');
+                if (menuIcon) menuIcon.textContent = 'menu';
             }
         });
     });
@@ -40,14 +49,16 @@ function inicializarMenuMobile() {
  */
 function toggleMenu() {
     const navLinks = document.querySelector('.nav-links');
-    const menuToggle = document.querySelector('.menu-toggle i');
+    const menuIcon = document.querySelector('.menu-toggle .material-symbols-outlined');
+    
+    if (!navLinks) return;
     
     if (navLinks.classList.contains('active')) {
         navLinks.classList.remove('active');
-        menuToggle.className = 'fas fa-bars';
+        if (menuIcon) menuIcon.textContent = 'menu';
     } else {
         navLinks.classList.add('active');
-        menuToggle.className = 'fas fa-times';
+        if (menuIcon) menuIcon.textContent = 'close';
     }
 }
 
@@ -59,7 +70,7 @@ function toggleMenu() {
  * Detectar dispositivo mobile
  */
 function ehMobile() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
 }
 
 /**
@@ -82,9 +93,8 @@ function lidarMudancaOrientacao() {
     window.addEventListener('orientationchange', () => {
         detectarOrientacao();
         
-        // Recriar gráficos se necessário
         setTimeout(() => {
-            if (calculoAtual) {
+            if (typeof calculoAtual !== 'undefined' && calculoAtual && typeof atualizarGraficos === 'function') {
                 atualizarGraficos();
             }
         }, 300);
@@ -97,17 +107,26 @@ function lidarMudancaOrientacao() {
 function otimizarInputsMobile() {
     if (!ehMobile()) return;
     
-    // Forçar font-size de 16px para evitar zoom no iOS
+    // Prevenir zoom automático no iOS
     document.querySelectorAll('input, select, textarea').forEach(input => {
         input.style.fontSize = '16px';
     });
     
-    // Adicionar autocomplete
-    document.getElementById('consumoMensal').setAttribute('inputmode', 'decimal');
-    document.getElementById('tarifaEnergia').setAttribute('inputmode', 'decimal');
-    document.getElementById('areaDisponivel').setAttribute('inputmode', 'decimal');
-    document.getElementById('custoPainel').setAttribute('inputmode', 'decimal');
-    document.getElementById('anos').setAttribute('inputmode', 'numeric');
+    const inputsConfig = [
+        'consumoMensal',
+        'tarifaEnergia',
+        'areaDisponivel',
+        'custoPainel',
+        'potenciaPainel'
+    ];
+    
+    inputsConfig.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute('inputmode', 'decimal');
+    });
+    
+    const anosEl = document.getElementById('anos');
+    if (anosEl) anosEl.setAttribute('inputmode', 'numeric');
 }
 
 // ==========================================
@@ -123,8 +142,10 @@ function inicializarLazyLoading() {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const img = entry.target;
-                    img.src = img.dataset.src;
-                    img.classList.remove('lazy');
+                    if (img.dataset.src) {
+                        img.src = img.dataset.src;
+                        img.classList.remove('lazy');
+                    }
                     imageObserver.unobserve(img);
                 }
             });
@@ -135,7 +156,7 @@ function inicializarLazyLoading() {
 }
 
 /**
- * Debounce para redimensionamento de tela
+ * Debounce para eventos contínuos
  */
 function debounce(func, wait) {
     let timeout;
@@ -150,36 +171,43 @@ function debounce(func, wait) {
 }
 
 /**
- * Handle responsivo de gráficos
+ * Redimensionamento responsivo de gráficos
  */
 const handleResizeChart = debounce(() => {
-    if (calculoAtual && window.innerWidth <= 768) {
+    if (typeof calculoAtual !== 'undefined' && calculoAtual && window.innerWidth <= 768 && typeof atualizarGraficos === 'function') {
         atualizarGraficos();
     }
 }, 500);
 
 // ==========================================
-// NOTIFICAÇÕES MOBILE
+// NOTIFICAÇÕES MOBILE (TOAST)
 // ==========================================
 
 /**
- * Mostrar notificação toast
+ * Exibe notificação no estilo Toast
  */
 function mostrarToast(mensagem, tipo = 'info', duracao = 3000) {
+    const toastAntigo = document.querySelector('.toast');
+    if (toastAntigo) toastAntigo.remove();
+
     const toast = document.createElement('div');
     toast.className = `toast toast-${tipo}`;
     toast.textContent = mensagem;
     toast.style.cssText = `
         position: fixed;
         bottom: 20px;
-        left: 10px;
-        right: 10px;
-        padding: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 400px;
+        padding: 12px 20px;
         border-radius: 8px;
         background: ${tipo === 'success' ? '#10b981' : tipo === 'error' ? '#ef4444' : '#0ea5e9'};
         color: white;
+        text-align: center;
+        font-weight: 600;
         z-index: 9999;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         animation: slideUp 0.3s ease;
     `;
     
@@ -192,12 +220,9 @@ function mostrarToast(mensagem, tipo = 'info', duracao = 3000) {
 }
 
 // ==========================================
-// STORAGE OTIMIZADO
+// LOCAL STORAGE E INICIALIZAÇÃO
 // ==========================================
 
-/**
- * Verificar espaço de storage disponível
- */
 function verificarStorageDisponivel() {
     try {
         const test = '__test__';
@@ -209,129 +234,94 @@ function verificarStorageDisponivel() {
     }
 }
 
-/**
- * Limpar storage antigo (manter apenas últimos 10 cálculos)
- */
 function limparStorageAntigo() {
     try {
-        const historico = JSON.parse(localStorage.getItem('historico_calculos')) || [];
-        
-        if (historico.length > 10) {
-            const historicoLimitado = historico.slice(0, 10);
-            localStorage.setItem('historico_calculos', JSON.stringify(historicoLimitado));
+        const historicoStr = localStorage.getItem('historico_calculos');
+        if (historicoStr) {
+            const historicoLocal = JSON.parse(historicoStr);
+            if (Array.isArray(historicoLocal) && historicoLocal.length > 10) {
+                const historicoLimitado = historicoLocal.slice(0, 10);
+                localStorage.setItem('historico_calculos', JSON.stringify(historicoLimitado));
+            }
         }
     } catch (e) {
-        console.error('Erro ao limpar storage:', e);
+        console.error('Erro ao gerenciar histórico:', e);
     }
 }
 
-// ==========================================
-// INICIALIZAÇÃO MOBILE
-// ==========================================
-
-/**
- * Inicializa todas as funcionalidades mobile
- */
 function inicializarMobile() {
-    if (ehMobile()) {
-        // Menu mobile
-        inicializarMenuMobile();
-        
-        // Otimizações de input
-        otimizarInputsMobile();
-        
-        // Orientação
-        detectarOrientacao();
-        lidarMudancaOrientacao();
-        
-        // Lazy loading
-        inicializarLazyLoading();
-        
-        // Resize handler
-        window.addEventListener('resize', handleResizeChart);
-        
-        // Storage
+    inicializarMenuMobile();
+    otimizarInputsMobile();
+    detectarOrientacao();
+    lidarMudancaOrientacao();
+    inicializarLazyLoading();
+    
+    window.addEventListener('resize', handleResizeChart);
+    
+    if (verificarStorageDisponivel()) {
         limparStorageAntigo();
-        
-        // Notificação se storage não disponível
-        if (!verificarStorageDisponivel()) {
-            console.warn('LocalStorage não disponível no dispositivo');
-        }
+    } else {
+        console.warn('LocalStorage não disponível');
     }
 }
 
-// ==========================================
-// ADICIONAIS AO SCRIPT.JS
-// ======================================== 
-
-// Chamar inicialização mobile quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
     inicializarMobile();
 });
 
-// Atualizar notificações ao salvar (mobile)
-(function() {
-    const salvarCalculoOriginal = window.salvarCalculo;
-    
-    window.salvarCalculo = function() {
-        if (!calculoAtual) {
-            mostrarToast('Faça um cálculo primeiro!', 'error');
-            return;
-        }
-        
-        const id = Date.now();
-        const calculo = {
-            id,
-            ...calculoAtual
-        };
-        
-        historico.unshift(calculo);
-        localStorage.setItem('historico_calculos', JSON.stringify(historico));
-        
-        mostrarToast('✓ Cálculo salvo com sucesso!', 'success');
-        exibirHistorico();
-    };
-})();
-
-// ==========================================
-// ANIMAÇÕES CSS
-// ======================================== 
-
+// Estilos de animação e menu mobile CSS injetados dinamicamente
 const style = document.createElement('style');
 style.textContent = `
+    .menu-toggle {
+        background: none;
+        border: none;
+        color: var(--text-dark);
+        font-size: 1.8rem;
+        cursor: pointer;
+        display: none;
+        padding: 0.25rem;
+    }
+
+    @media (max-width: 768px) {
+        .menu-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-links {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            padding: 1rem 0;
+            gap: 1rem;
+        }
+
+        .nav-links.active {
+            display: flex;
+        }
+    }
+
     @keyframes slideUp {
         from {
-            transform: translateY(100px);
+            transform: translate(-50%, 100px);
             opacity: 0;
         }
         to {
-            transform: translateY(0);
+            transform: translate(-50%, 0);
             opacity: 1;
         }
     }
     
     @keyframes slideDown {
         from {
-            transform: translateY(0);
+            transform: translate(-50%, 0);
             opacity: 1;
         }
         to {
-            transform: translateY(100px);
+            transform: translate(-50%, 100px);
             opacity: 0;
         }
-    }
-    
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
-    }
-    
-    .nav-links.active {
-        animation: fadeIn 0.3s ease;
     }
 `;
 document.head.appendChild(style);
