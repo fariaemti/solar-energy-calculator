@@ -173,6 +173,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
 }
 
 .theme-btn:hover {
@@ -218,6 +220,7 @@ body {
     justify-content: center;
     gap: var(--spacing-sm);
     text-decoration: none;
+    min-height: 48px;
 }
 
 .btn-primary {
@@ -262,6 +265,7 @@ body {
 .btn-small {
     padding: var(--spacing-xs) var(--spacing-sm);
     font-size: var(--font-size-xs);
+    min-height: 36px;
 }
 
 .btn-danger {
@@ -370,6 +374,7 @@ body {
     color: var(--text-dark);
     transition: var(--transition);
     font-family: inherit;
+    min-height: 48px;
 }
 
 .form-group input:focus,
@@ -540,11 +545,11 @@ body {
 }
 
 /* ========================================
-   GRÁFICOS
+   GRÁFICOS E TABELAS FLEXÍVEIS
    ======================================== */
 .charts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
     margin-bottom: 3rem;
 }
@@ -554,12 +559,19 @@ body {
     padding: 1.5rem;
     border-radius: 12px;
     box-shadow: var(--shadow-md);
+    position: relative;
+    width: 100%;
 }
 
 .chart-container h3 {
     margin-bottom: 1rem;
     color: var(--text-dark);
     font-size: var(--font-size-lg);
+}
+
+canvas {
+    max-width: 100% !important;
+    height: auto !important;
 }
 
 /* ========================================
@@ -578,9 +590,12 @@ body {
     color: var(--text-dark);
 }
 
-.table-wrapper {
+.table-wrapper,
+.table-container,
+.tabela-container {
     overflow-x: auto;
     border-radius: 8px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .simulation-table {
@@ -598,12 +613,14 @@ body {
     padding: 1rem;
     text-align: left;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .simulation-table td {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-dark);
+    white-space: nowrap;
 }
 
 .simulation-table td.highlight {
@@ -693,7 +710,7 @@ body {
    ======================================== */
 .historico-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.5rem;
     margin-top: 2rem;
 }
@@ -760,6 +777,7 @@ body {
     cursor: pointer;
     font-size: var(--font-size-xs);
     transition: var(--transition);
+    min-height: 38px;
 }
 
 .historico-actions button:hover {
@@ -784,12 +802,19 @@ body {
 }
 
 /* ========================================
-   RESPONSIVE DESIGN
+   RESPONSIVIDADE E OTIMIZAÇÕES MOBILE
    ======================================== */
 @media (max-width: 768px) {
     .navbar-content {
-        flex-wrap: wrap;
+        flex-direction: column;
+        gap: var(--spacing-md);
         padding: var(--spacing-sm) 0;
+    }
+
+    .nav-links {
+        gap: var(--spacing-md);
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .calculator-container {
@@ -798,6 +823,7 @@ body {
 
     .form-row {
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
 
     .quick-results {
@@ -813,12 +839,18 @@ body {
     }
 
     .action-buttons .btn {
-        min-width: auto;
-        flex: 1;
+        min-width: 100%;
+        flex: 1 1 100%;
     }
 
     .dashboard-grid {
         grid-template-columns: 1fr;
+    }
+
+    .form-group input,
+    .form-group select,
+    .btn {
+        font-size: 16px !important; /* Previne auto-zoom no Safari/Chrome iOS */
     }
 }
 
@@ -828,7 +860,7 @@ body {
     }
 
     .hero {
-        padding: 3rem var(--spacing-md);
+        padding: 3rem var(--spacing-sm);
     }
 
     .hero-content h1 {
@@ -844,12 +876,13 @@ body {
     }
 
     .form-section {
-        padding: 1.5rem;
+        padding: 1rem;
     }
 
     .result-card {
         flex-direction: column;
         text-align: center;
+        padding: 1rem;
     }
 
     .action-buttons {
@@ -866,7 +899,7 @@ body {
 
     .simulation-table th,
     .simulation-table td {
-        padding: 0.5rem;
+        padding: 0.5rem 0.25rem;
     }
 }
 
@@ -876,7 +909,7 @@ body {
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(15px);
     }
     to {
         opacity: 1;
@@ -884,12 +917,11 @@ body {
     }
 }
 
-.result-card {
-    animation: fadeIn 0.6s ease-out;
-}
-
-.dashboard-card {
-    animation: fadeIn 0.6s ease-out;
+.result-card,
+.dashboard-card,
+.chart-container,
+.historico-item {
+    animation: fadeIn 0.4s ease-out;
 }
 
 .hidden {
@@ -903,6 +935,7 @@ body {
 /* Scrollbar Personalizada */
 ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
 }
 
 ::-webkit-scrollbar-track {
