@@ -13,6 +13,12 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
+// Tratar requisição preflight CORS
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 // Prevenir cache
 header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
@@ -29,7 +35,7 @@ require_once 'database.php';
 // ==========================================
 
 $metodo = $_SERVER['REQUEST_METHOD'];
-$rota = isset($_GET['rota']) ? $_GET['rota'] : '';
+$rota = isset($_GET['rota']) ? trim($_GET['rota']) : '';
 $dados = [];
 
 if ($metodo === 'POST' || $metodo === 'PUT') {
@@ -37,7 +43,7 @@ if ($metodo === 'POST' || $metodo === 'PUT') {
     $dados = json_decode($input, true) ?? [];
 }
 
-// Gerar ID de usuário único (usando sessão ou cookie)
+// Gerar ID de usuário único
 $usuario_id = gerarUsuarioId();
 
 // ==========================================
@@ -59,7 +65,8 @@ try {
             break;
             
         case 'obter':
-            responderObter($db, $usuario_id, $_GET['id'] ?? null);
+            $id = isset($_GET['id']) ? filter_var($_GET['id'], FILTER_VALIDATE_INT) : null;
+            responderObter($db, $usuario_id, $id);
             break;
             
         case 'deletar':
@@ -86,7 +93,7 @@ try {
             http_response_code(404);
             echo json_encode([
                 'sucesso' => false,
-                'mensagem' => 'Rota não encontrada: ' . $rota
+                'mensagem' => 'Rota não encontrada: ' . htmlspecialchars($rota)
             ]);
     }
     
@@ -103,11 +110,7 @@ try {
 // FUNÇÕES DE RESPOSTA
 // ==========================================
 
-/**
- * Processa o cálculo de economia solar
- */
 function responderCalculo($dados) {
-    // Validar dados de entrada
     if (!isset($dados['consumoMensal'], $dados['tarifaEnergia'], $dados['regiao'])) {
         http_response_code(400);
         echo json_encode([
@@ -126,11 +129,7 @@ function responderCalculo($dados) {
     ]);
 }
 
-/**
- * Salva um cálculo no banco de dados
- */
 function responderSalvar($db, $usuario_id, $dados) {
-    // Obter ou criar usuário
     $usuario_db_id = obterOuCriarUsuario($db, $usuario_id, $dados['nome'] ?? null, $dados['email'] ?? null);
     
     if (!$usuario_db_id) {
@@ -142,7 +141,6 @@ function responderSalvar($db, $usuario_id, $dados) {
         return;
     }
     
-    // Salvar cálculo
     $calculo_id = salvarCalculo($db, $usuario_id, $dados);
     
     if (!$calculo_id) {
@@ -161,9 +159,6 @@ function responderSalvar($db, $usuario_id, $dados) {
     ]);
 }
 
-/**
- * Retorna o histórico de cálculos do usuário
- */
 function responderHistorico($db, $usuario_id) {
     $calculos = obterCalculosUsuario($db, $usuario_id);
     
@@ -174,15 +169,12 @@ function responderHistorico($db, $usuario_id) {
     ]);
 }
 
-/**
- * Obtém um cálculo específico
- */
 function responderObter($db, $usuario_id, $calculo_id) {
     if (!$calculo_id) {
         http_response_code(400);
         echo json_encode([
             'sucesso' => false,
-            'mensagem' => 'ID do cálculo não fornecido'
+            'mensagem' => 'ID do cálculo inválido ou não fornecido'
         ]);
         return;
     }
@@ -204,9 +196,6 @@ function responderObter($db, $usuario_id, $calculo_id) {
     ]);
 }
 
-/**
- * Deleta um cálculo
- */
 function responderDeletar($db, $usuario_id, $dados) {
     $calculo_id = $dados['calculo_id'] ?? null;
     
@@ -234,9 +223,6 @@ function responderDeletar($db, $usuario_id, $dados) {
     ]);
 }
 
-/**
- * Exporta cálculo em formato PDF
- */
 function responderExportarPDF($db, $usuario_id, $dados) {
     $calculo_id = $dados['calculo_id'] ?? null;
     
@@ -260,26 +246,14 @@ function responderExportarPDF($db, $usuario_id, $dados) {
         return;
     }
     
-    // Gerar conteúdo PDF (simplificado - usar biblioteca como TCPDF em produção)
     $conteudo = gerarConteudoPDF($calculo);
     
-    // Salvar arquivo
-    $arquivo = 'data/relatorio_' . $calculo_id . '_' . time() . '.txt';
-    file_put_contents($arquivo, $conteudo);
-    
-    // Registrar exportação
-    registrarExportacao($db, $calculo_id, 'PDF', $arquivo);
-    
-    echo json_encode([
-        'sucesso' => true,
-        'mensagem' => 'PDF gerado com sucesso',
-        'arquivo' => $arquivo
-    ]);
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Content-Disposition: attachment; filename="relatorio_solar_' . $calculo_id . '.txt"');
+    echo $conteudo;
+    exit();
 }
 
-/**
- * Exporta cálculo em formato CSV
- */
 function responderExportarCSV($db, $usuario_id, $dados) {
     $calculo_id = $dados['calculo_id'] ?? null;
     
@@ -303,26 +277,14 @@ function responderExportarCSV($db, $usuario_id, $dados) {
         return;
     }
     
-    // Gerar conteúdo CSV
     $conteudo = gerarConteudoCSV($calculo);
     
-    // Salvar arquivo
-    $arquivo = 'data/relatorio_' . $calculo_id . '_' . time() . '.csv';
-    file_put_contents($arquivo, $conteudo);
-    
-    // Registrar exportação
-    registrarExportacao($db, $calculo_id, 'CSV', $arquivo);
-    
-    echo json_encode([
-        'sucesso' => true,
-        'mensagem' => 'CSV gerado com sucesso',
-        'arquivo' => $arquivo
-    ]);
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="relatorio_solar_' . $calculo_id . '.csv"');
+    echo $conteudo;
+    exit();
 }
 
-/**
- * Retorna estatísticas do usuário
- */
 function responderEstatisticas($db, $usuario_id) {
     $stats = obterEstatisticasUsuario($db, $usuario_id);
     
@@ -332,11 +294,9 @@ function responderEstatisticas($db, $usuario_id) {
     ]);
 }
 
-/**
- * Verifica se o banco de dados está funcionando
- */
 function responderVerificarBanco() {
-    $db_file = __DIR__ . '/data/calculos.db';
+    $dir = __DIR__ . '/data';
+    $db_file = $dir . '/calculos.db';
     $existe = file_exists($db_file);
     $tamanho = $existe ? filesize($db_file) : 0;
     
@@ -345,7 +305,7 @@ function responderVerificarBanco() {
         'banco_existe' => $existe,
         'tamanho_bytes' => $tamanho,
         'caminho' => $db_file,
-        'diretorio_existe' => is_dir(__DIR__ . '/data'),
+        'diretorio_existe' => is_dir($dir),
         'diretorio_criavel' => is_writable(__DIR__)
     ]);
 }
@@ -354,11 +314,7 @@ function responderVerificarBanco() {
 // FUNÇÕES AUXILIARES DE CÁLCULO
 // ==========================================
 
-/**
- * Realiza o cálculo completo de economia solar
- */
 function calcularEconomiaSolar($dados) {
-    // Constantes
     $POTENCIA_PAINEL = 0.4;
     $EFICIENCIA_SISTEMA = 0.85;
     $HORAS_PICO_SOLAR = 5;
@@ -374,14 +330,12 @@ function calcularEconomiaSolar($dados) {
         'sul' => 4.3
     ];
     
-    // Extrair dados
     $consumoMensal = floatval($dados['consumoMensal']);
     $tarifaEnergia = floatval($dados['tarifaEnergia']);
     $regiao = $dados['regiao'] ?? 'sudeste';
     $custoPainel = floatval($dados['custoPainel'] ?? 2000);
     $anos = intval($dados['anos'] ?? 25);
     
-    // Cálculos
     $consumoAnual = $consumoMensal * 12;
     $custoAnualConvencional = $consumoAnual * $tarifaEnergia;
     
@@ -395,12 +349,11 @@ function calcularEconomiaSolar($dados) {
     $producaoSolarAnual = $numPaineis * $POTENCIA_PAINEL * $HORAS_PICO_SOLAR * 365 * $EFICIENCIA_SISTEMA;
     $economiaAnual = min($consumoAnual, $producaoSolarAnual) * $tarifaEnergia;
     
-    $paybackTime = $investimentoInicial > 0 ? $investimentoInicial / $economiaAnual : 0;
+    $paybackTime = $economiaAnual > 0 ? $investimentoInicial / $economiaAnual : 0;
     $roiAnual = $investimentoInicial > 0 ? ($economiaAnual / $investimentoInicial) * 100 : 0;
     
     $co2EvitadoAnual = ($producaoSolarAnual * $CO2_POR_KWH) / 1000;
     
-    // Simulação anual
     $simulacaoAnual = [];
     $economiaAcumulada = -$investimentoInicial;
     
@@ -408,8 +361,8 @@ function calcularEconomiaSolar($dados) {
         $degradacao = 1 - ($DEGRADACAO_ANUAL / 100) * ($ano - 1);
         $producaoAnoAtual = $producaoSolarAnual * $degradacao;
         
-        $custoConvencionalAno = $consumoAnual * 0.85;
-        $economiaAnoAtual = min($consumoAnual, $producaoAnoAtual) * 0.85;
+        $custoConvencionalAno = $consumoAnual * $tarifaEnergia;
+        $economiaAnoAtual = min($consumoAnual, $producaoAnoAtual) * $tarifaEnergia;
         $manutencao = $investimentoInicial * $MANUTENCAO_ANUAL;
         
         $economiaAcumulada += $economiaAnoAtual - $manutencao;
@@ -448,64 +401,56 @@ function calcularEconomiaSolar($dados) {
     ];
 }
 
-/**
- * Gera conteúdo de PDF (simplificado)
- */
 function gerarConteudoPDF($calculo) {
     $conteudo = "RELATÓRIO DE SIMULAÇÃO DE ECONOMIA SOLAR\n";
     $conteudo .= "=========================================\n\n";
     $conteudo .= "Data: " . date('d/m/Y H:i:s') . "\n\n";
     
     $conteudo .= "DADOS DE ENTRADA:\n";
-    $conteudo .= "- Consumo Mensal: " . $calculo['consumo_mensal'] . " kWh\n";
-    $conteudo .= "- Tarifa de Energia: R$ " . $calculo['tarifa_energia'] . "/kWh\n";
-    $conteudo .= "- Região: " . $calculo['regiao'] . "\n";
-    $conteudo .= "- Área Disponível: " . $calculo['area_disponivel'] . " m²\n\n";
+    $conteudo .= "- Consumo Mensal: " . ($calculo['consumo_mensal'] ?? 0) . " kWh\n";
+    $conteudo .= "- Tarifa de Energia: R$ " . ($calculo['tarifa_energia'] ?? 0) . "/kWh\n";
+    $conteudo .= "- Região: " . ($calculo['regiao'] ?? 'N/A') . "\n\n";
     
     $conteudo .= "RESULTADOS:\n";
-    $conteudo .= "- Número de Painéis: " . $calculo['num_paineis'] . "\n";
-    $conteudo .= "- Investimento Inicial: R$ " . number_format($calculo['investimento_inicial'], 2, ',', '.') . "\n";
-    $conteudo .= "- Economia Anual: R$ " . number_format($calculo['economia_anual'], 2, ',', '.') . "\n";
-    $conteudo .= "- Tempo de Payback: " . $calculo['payback_time'] . " anos\n";
-    $conteudo .= "- ROI Anual: " . $calculo['roi_anual'] . "%\n";
-    $conteudo .= "- Economia Total (25 anos): R$ " . number_format($calculo['economia_total'], 2, ',', '.') . "\n";
-    $conteudo .= "- CO₂ Evitado/Ano: " . number_format($calculo['co2_evitado'], 2, ',', '.') . " ton\n";
+    $conteudo .= "- Número de Painéis: " . ($calculo['num_paineis'] ?? 0) . "\n";
+    $conteudo .= "- Investimento Inicial: R$ " . number_format($calculo['investimento_inicial'] ?? 0, 2, ',', '.') . "\n";
+    $conteudo .= "- Economia Anual: R$ " . number_format($calculo['economia_anual'] ?? 0, 2, ',', '.') . "\n";
+    $conteudo .= "- Tempo de Payback: " . ($calculo['payback_time'] ?? 0) . " anos\n";
+    $conteudo .= "- ROI Anual: " . ($calculo['roi_anual'] ?? 0) . "%\n";
+    $conteudo .= "- Economia Total (25 anos): R$ " . number_format($calculo['economia_total'] ?? 0, 2, ',', '.') . "\n";
+    $conteudo .= "- CO₂ Evitado/Ano: " . number_format($calculo['co2_evitado'] ?? 0, 2, ',', '.') . " ton\n";
     
     return $conteudo;
 }
 
-/**
- * Gera conteúdo em formato CSV
- */
 function gerarConteudoCSV($calculo) {
     $csv = "Ano,Custo Convencional,Produção Solar,Economia Anual,Economia Acumulada,Lucro Líquido\n";
     
     if (!empty($calculo['dados_simulacao'])) {
         $simulacao = is_array($calculo['dados_simulacao']) ? $calculo['dados_simulacao'] : json_decode($calculo['dados_simulacao'], true);
         
-        foreach ($simulacao as $linha) {
-            $csv .= $linha['ano'] . ",";
-            $csv .= $linha['custoConvencional'] . ",";
-            $csv .= $linha['producaoSolar'] . ",";
-            $csv .= $linha['economiaAnual'] . ",";
-            $csv .= $linha['economiaAcumulada'] . ",";
-            $csv .= $linha['lucroLiquido'] . "\n";
+        if (is_array($simulacao)) {
+            foreach ($simulacao as $linha) {
+                $csv .= ($linha['ano'] ?? '') . ",";
+                $csv .= ($linha['custoConvencional'] ?? 0) . ",";
+                $csv .= ($linha['producaoSolar'] ?? 0) . ",";
+                $csv .= ($linha['economiaAnual'] ?? 0) . ",";
+                $csv .= ($linha['economiaAcumulada'] ?? 0) . ",";
+                $csv .= ($linha['lucroLiquido'] ?? 0) . "\n";
+            }
         }
     }
     
     return $csv;
 }
 
-/**
- * Gera um ID único para o usuário
- */
 function gerarUsuarioId() {
     if (!isset($_COOKIE['usuario_id'])) {
         $usuario_id = 'user_' . bin2hex(random_bytes(16));
-        setcookie('usuario_id', $usuario_id, time() + (365 * 24 * 60 * 60), '/');
+        if (!headers_sent()) {
+            setcookie('usuario_id', $usuario_id, time() + (365 * 24 * 60 * 60), '/', '', false, true);
+        }
         return $usuario_id;
     }
     return $_COOKIE['usuario_id'];
 }
-
-?>
