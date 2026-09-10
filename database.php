@@ -8,13 +8,12 @@
 // CONFIGURAÇÕES
 // ==========================================
 
-// Diretório de dados
 define('DATA_DIR', __DIR__ . '/data');
 define('DB_FILE', DATA_DIR . '/calculos.db');
 
 // Criar diretório se não existir
 if (!file_exists(DATA_DIR)) {
-    mkdir(DATA_DIR, 0755, true);
+    @mkdir(DATA_DIR, 0755, true);
 }
 
 // ==========================================
@@ -22,11 +21,10 @@ if (!file_exists(DATA_DIR)) {
 // ==========================================
 
 try {
-    // Conectar ou criar banco de dados SQLite
     $db = new PDO('sqlite:' . DB_FILE);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     
-    // Inicializar banco de dados
     inicializarBancoDados($db);
     
 } catch (PDOException $e) {
@@ -35,7 +33,7 @@ try {
         'sucesso' => false,
         'mensagem' => 'Erro ao conectar ao banco de dados: ' . $e->getMessage()
     ]);
-    exit;
+    exit();
 }
 
 // ==========================================
@@ -46,7 +44,6 @@ try {
  * Inicializa o banco de dados criando tabelas se não existirem
  */
 function inicializarBancoDados($db) {
-    // Tabela de cálculos salvos
     $db->exec("
         CREATE TABLE IF NOT EXISTS calculos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,7 +69,6 @@ function inicializarBancoDados($db) {
         )
     ");
     
-    // Tabela de usuários
     $db->exec("
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,7 +79,6 @@ function inicializarBancoDados($db) {
         )
     ");
     
-    // Tabela de exportações
     $db->exec("
         CREATE TABLE IF NOT EXISTS exportacoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -101,7 +96,6 @@ function inicializarBancoDados($db) {
  */
 function obterOuCriarUsuario($db, $usuario_id, $nome = null, $email = null) {
     try {
-        // Verificar se usuário já existe
         $stmt = $db->prepare("SELECT id FROM usuarios WHERE usuario_id = ?");
         $stmt->execute([$usuario_id]);
         $usuario = $stmt->fetch();
@@ -110,7 +104,6 @@ function obterOuCriarUsuario($db, $usuario_id, $nome = null, $email = null) {
             return $usuario['id'];
         }
         
-        // Criar novo usuário
         $stmt = $db->prepare("
             INSERT INTO usuarios (usuario_id, nome, email)
             VALUES (?, ?, ?)
@@ -194,11 +187,12 @@ function obterCalculosUsuario($db, $usuario_id) {
         ");
         $stmt->execute([$usuario_id]);
         
-        $calculos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $calculos = $stmt->fetchAll();
         
-        // Decodificar dados de simulação
         foreach ($calculos as &$calculo) {
-            $calculo['dados_simulacao'] = json_decode($calculo['dados_simulacao'], true);
+            $calculo['dados_simulacao'] = !empty($calculo['dados_simulacao']) 
+                ? json_decode($calculo['dados_simulacao'], true) 
+                : [];
         }
         
         return $calculos;
@@ -217,10 +211,12 @@ function obterCalculo($db, $calculo_id) {
         $stmt = $db->prepare("SELECT * FROM calculos WHERE id = ?");
         $stmt->execute([$calculo_id]);
         
-        $calculo = $stmt->fetch(PDO::FETCH_ASSOC);
+        $calculo = $stmt->fetch();
         
         if ($calculo) {
-            $calculo['dados_simulacao'] = json_decode($calculo['dados_simulacao'], true);
+            $calculo['dados_simulacao'] = !empty($calculo['dados_simulacao']) 
+                ? json_decode($calculo['dados_simulacao'], true) 
+                : [];
         }
         
         return $calculo;
@@ -236,7 +232,6 @@ function obterCalculo($db, $calculo_id) {
  */
 function deletarCalculo($db, $calculo_id, $usuario_id) {
     try {
-        // Verificar se o usuário é o proprietário
         $stmt = $db->prepare("SELECT usuario_id FROM calculos WHERE id = ?");
         $stmt->execute([$calculo_id]);
         $calculo = $stmt->fetch();
@@ -245,11 +240,9 @@ function deletarCalculo($db, $calculo_id, $usuario_id) {
             return false;
         }
         
-        // Deletar exportações associadas
         $stmt = $db->prepare("DELETE FROM exportacoes WHERE calculo_id = ?");
         $stmt->execute([$calculo_id]);
         
-        // Deletar cálculo
         $stmt = $db->prepare("DELETE FROM calculos WHERE id = ?");
         $stmt->execute([$calculo_id]);
         
@@ -266,7 +259,6 @@ function deletarCalculo($db, $calculo_id, $usuario_id) {
  */
 function atualizarCalculo($db, $calculo_id, $usuario_id, $dados) {
     try {
-        // Verificar se o usuário é o proprietário
         $stmt = $db->prepare("SELECT usuario_id FROM calculos WHERE id = ?");
         $stmt->execute([$calculo_id]);
         $calculo = $stmt->fetch();
@@ -353,21 +345,19 @@ function obterEstatisticasUsuario($db, $usuario_id) {
         $stmt = $db->prepare("
             SELECT 
                 COUNT(*) as total_calculos,
-                AVG(economia_anual) as economia_media,
-                SUM(economia_total) as economia_total_acumulada,
-                AVG(payback_time) as payback_medio,
-                SUM(co2_evitado) as co2_evitado_total
+                COALESCE(AVG(economia_anual), 0) as economia_media,
+                COALESCE(SUM(economia_total), 0) as economia_total_acumulada,
+                COALESCE(AVG(payback_time), 0) as payback_medio,
+                COALESCE(SUM(co2_evitado), 0) as co2_evitado_total
             FROM calculos 
             WHERE usuario_id = ?
         ");
         $stmt->execute([$usuario_id]);
         
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetch();
         
     } catch (PDOException $e) {
         error_log("Erro ao obter estatísticas: " . $e->getMessage());
         return null;
     }
 }
-
-?>
