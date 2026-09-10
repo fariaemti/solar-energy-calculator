@@ -24,6 +24,9 @@ const IRRADIACAO_SOLAR = {
     sul: 4.3
 };
 
+// Configuração da rota base para o backend
+const API_URL = 'process.php';
+
 // ==========================================
 // VARIÁVEIS GLOBAIS
 // ==========================================
@@ -95,12 +98,10 @@ function calcularEconomiaSolar(dados) {
     
     const simulacaoAnual = gerarSimulacaoAnual(
         consumoAnual,
-        economiaAnual,
         investimentoInicial,
         dados.anos,
         producaoSolarAnual,
-        numPaineis,
-        dados.custoPainel
+        dados.tarifaEnergia
     );
     
     const economiaTotal = simulacaoAnual[simulacaoAnual.length - 1].economiaAcumulada;
@@ -124,15 +125,15 @@ function calcularEconomiaSolar(dados) {
     };
 }
 
-function gerarSimulacaoAnual(consumoAnual, economiaAnual, investimento, anos, producaoSolar) {
+function gerarSimulacaoAnual(consumoAnual, investimento, anos, producaoSolar, tarifaEnergia) {
     const simulacao = [];
     let economiaAcumulada = -investimento;
     
     for (let ano = 1; ano <= anos; ano++) {
         const degradacao = 1 - (CONSTANTES.DEGRADACAO_ANUAL / 100) * (ano - 1);
         const producaoAnoAtual = producaoSolar * degradacao;
-        const custoConvencionalAno = consumoAnual * 0.85;
-        const economiaAnoAtual = Math.min(consumoAnual, producaoAnoAtual) * 0.85;
+        const custoConvencionalAno = consumoAnual * tarifaEnergia;
+        const economiaAnoAtual = Math.min(consumoAnual, producaoAnoAtual) * tarifaEnergia;
         const manutencao = investimento * CONSTANTES.MANUTENCAO_ANUAL;
         
         economiaAcumulada += economiaAnoAtual - manutencao;
@@ -144,7 +145,7 @@ function gerarSimulacaoAnual(consumoAnual, economiaAnual, investimento, anos, pr
             economiaAnual: parseFloat(economiaAnoAtual.toFixed(2)),
             manutencao: parseFloat(manutencao.toFixed(2)),
             economiaAcumulada: parseFloat(economiaAcumulada.toFixed(2)),
-            lucroLiquido: parseFloat((economiaAcumulada).toFixed(2))
+            lucroLiquido: parseFloat(economiaAcumulada.toFixed(2))
         });
     }
     
@@ -155,7 +156,7 @@ function gerarSimulacaoAnual(consumoAnual, economiaAnual, investimento, anos, pr
 // HANDLERS DE EVENTOS
 // ==========================================
 
-function handleCalcular(e) {
+async function handleCalcular(e) {
     e.preventDefault();
     
     const dados = {
@@ -171,7 +172,24 @@ function handleCalcular(e) {
     
     if (!validarDados(dados)) return;
     
-    calculoAtual = calcularEconomiaSolar(dados);
+    // Tenta calcular via Servidor (rota=calcular), senão faz fallback local
+    try {
+        const response = await fetch(`${API_URL}?rota=calcular`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            calculoAtual = result.data || result;
+        } else {
+            calculoAtual = calcularEconomiaSolar(dados);
+        }
+    } catch (err) {
+        calculoAtual = calcularEconomiaSolar(dados);
+    }
+
     exibirResultados();
     
     setTimeout(() => {
@@ -224,10 +242,10 @@ function exibirResultados() {
     
     document.getElementById('investimentoInicial').textContent = formatarMoeda(calc.investimentoInicial);
     document.getElementById('economia1Ano').textContent = formatarMoeda(calc.economiaAnual);
-    document.getElementById('roiAnual').textContent = calc.roiAnual.toFixed(2) + '%';
-    document.getElementById('paybackTime').textContent = calc.paybackTime.toFixed(1) + ' anos';
+    document.getElementById('roiAnual').textContent = Number(calc.roiAnual).toFixed(2) + '%';
+    document.getElementById('paybackTime').textContent = Number(calc.paybackTime).toFixed(1) + ' anos';
     document.getElementById('economiaTotal').textContent = formatarMoeda(calc.economiaTotal);
-    document.getElementById('co2Evitado').textContent = calc.co2EvitadoAnual.toFixed(2) + ' ton';
+    document.getElementById('co2Evitado').textContent = Number(calc.co2EvitadoAnual).toFixed(2) + ' ton';
     
     preencherTabelaSimulacao(calc.simulacaoAnual);
     
@@ -396,7 +414,7 @@ function criarGraficoMensal(calc) {
 // ARMAZENAMENTO E HISTÓRICO
 // ==========================================
 
-function salvarCalculo() {
+async function salvarCalculo() {
     if (!calculoAtual) {
         mostrarNotificacao('Faça um cálculo primeiro!', 'error');
         return;
@@ -404,6 +422,17 @@ function salvarCalculo() {
     
     const id = Date.now();
     const calculo = { id, ...calculoAtual };
+    
+    // Tenta salvar no backend via rota=salvar
+    try {
+        await fetch(`${API_URL}?rota=salvar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(calculo)
+        });
+    } catch (e) {
+        console.warn('Backend indisponível, salvando apenas localmente');
+    }
     
     historico.unshift(calculo);
     if (historico.length > 20) {
@@ -415,7 +444,24 @@ function salvarCalculo() {
     exibirHistorico();
 }
 
-function carregarHistorico() {
+async function carregarHistorico() {
+    // Tenta buscar o histórico do backend (rota=historico)
+    try {
+        const response = await fetch(`${API_URL}?rota=historico`);
+        if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data) && data.length > 0) {
+                historico = data;
+                localStorage.setItem('historico_calculos', JSON.stringify(historico));
+                exibirHistorico();
+                return;
+            }
+        }
+    } catch (e) {
+        console.warn('Sem acesso à API de histórico. Usando LocalStorage.');
+    }
+
+    // Fallback no LocalStorage
     try {
         const dados = localStorage.getItem('historico_calculos');
         historico = dados ? JSON.parse(dados) : [];
@@ -439,7 +485,7 @@ function exibirHistorico() {
         <div class="historico-item">
             <div class="historico-header">
                 <h4>☀️ ${calc.numPaineis} painéis - ${calc.regiao}</h4>
-                <span class="historico-date">${calc.timestamp}</span>
+                <span class="historico-date">${calc.timestamp || ''}</span>
             </div>
             <div class="historico-body">
                 <div class="historico-row">
@@ -452,7 +498,7 @@ function exibirHistorico() {
                 </div>
                 <div class="historico-row">
                     <span class="historico-label">Payback:</span>
-                    <span class="historico-value">${calc.paybackTime.toFixed(1)} anos</span>
+                    <span class="historico-value">${Number(calc.paybackTime).toFixed(1)} anos</span>
                 </div>
                 <div class="historico-row">
                     <span class="historico-label">Investimento:</span>
@@ -467,8 +513,22 @@ function exibirHistorico() {
     `).join('');
 }
 
-window.carregarCalculoDoHistorico = function(id) {
-    const calculo = historico.find(c => c.id === id);
+window.carregarCalculoDoHistorico = async function(id) {
+    let calculo = historico.find(c => c.id === id);
+    
+    // Tenta buscar diretamente do backend caso não esteja em memória local (rota=obter)
+    if (!calculo) {
+        try {
+            const response = await fetch(`${API_URL}?rota=obter&id=${id}`);
+            if (response.ok) {
+                const res = await response.json();
+                calculo = res.data || res;
+            }
+        } catch (e) {
+            console.error('Erro ao obter do backend', e);
+        }
+    }
+
     if (!calculo) {
         mostrarNotificacao('Cálculo não encontrado', 'error');
         return;
@@ -489,8 +549,19 @@ window.carregarCalculoDoHistorico = function(id) {
     mostrarNotificacao('Cálculo carregado!', 'success');
 };
 
-window.deletarCalculoDoHistorico = function(id) {
+window.deletarCalculoDoHistorico = async function(id) {
     if (confirm('Tem certeza que deseja deletar este cálculo?')) {
+        // Notifica o backend (rota=deletar)
+        try {
+            await fetch(`${API_URL}?rota=deletar`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+        } catch (e) {
+            console.warn('Erro ao deletar no servidor');
+        }
+
         historico = historico.filter(c => c.id !== id);
         localStorage.setItem('historico_calculos', JSON.stringify(historico));
         exibirHistorico();
@@ -551,7 +622,7 @@ RELATÓRIO DE SIMULAÇÃO DE ECONOMIA SOLAR
 Calculadora do EMTI
 =========================================
 
-DATA: ${calc.timestamp}
+DATA: ${calc.timestamp || new Date().toLocaleString('pt-BR')}
 
 DADOS DE ENTRADA:
 - Consumo Mensal: ${calc.consumoMensal} kWh
@@ -567,7 +638,7 @@ RESULTADOS DO CÁLCULO:
 - Economia Anual: R$ ${formatarNumero(calc.economiaAnual)}
 - Tempo de Payback: ${calc.paybackTime} anos
 - ROI Anual: ${calc.roiAnual}%
-- Economia Total (25 anos): R$ ${formatarNumero(calc.economiaTotal)}
+- Economia Total (${calc.anos} anos): R$ ${formatarNumero(calc.economiaTotal)}
 - CO₂ Evitado por Ano: ${calc.co2EvitadoAnual} ton
     `;
     
@@ -633,11 +704,11 @@ function validarDados(dados) {
 }
 
 function formatarNumero(num) {
-    return parseFloat(num).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return parseFloat(num || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function formatarMoeda(valor) {
-    return parseFloat(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // ==========================================
