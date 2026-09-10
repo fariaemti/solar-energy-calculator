@@ -146,9 +146,13 @@ function calcularEconomiaSolar(dados) {
         consumoMensal: dados.consumoMensal,
         consumoAnual,
         tarifaEnergia: dados.tarifaEnergia,
+        numPessoas: dados.numPessoas,
+        tipoResidencia: dados.tipoResidencia,
         regiao: dados.regiao,
         irradiacao,
         areaDisponivel: dados.areaDisponivel,
+        custoPainel: dados.custoPainel,
+        anos: dados.anos,
         
         // Cálculos
         potenciaNecessaria: parseFloat(potenciaNecessaria.toFixed(2)),
@@ -235,10 +239,13 @@ function handleCalcular(e) {
     // Exibir resultados
     exibirResultados();
     
-    // Scroll para resultados
+    // Scroll para resultados (mobile-friendly)
     setTimeout(() => {
-        document.getElementById('resultados').scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+        const resultadosSection = document.getElementById('resultados');
+        if (resultadosSection) {
+            resultadosSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, 300);
 }
 
 /**
@@ -246,7 +253,10 @@ function handleCalcular(e) {
  */
 function handleLimpar() {
     // Limpar exibição de resultados
-    document.getElementById('resultados').style.display = 'none';
+    const resultadosSection = document.getElementById('resultados');
+    if (resultadosSection) {
+        resultadosSection.style.display = 'none';
+    }
     calculoAtual = null;
     
     // Limpar cards de resultados rápidos
@@ -280,6 +290,11 @@ function atualizarPreview() {
  * Exibe os resultados do cálculo
  */
 function exibirResultados() {
+    if (!calculoAtual) {
+        console.error('Nenhum cálculo disponível');
+        return;
+    }
+    
     const calc = calculoAtual;
     
     // Atualizar cards de resultados rápidos
@@ -300,10 +315,15 @@ function exibirResultados() {
     preencherTabelaSimulacao(calc.simulacaoAnual);
     
     // Atualizar gráficos
-    atualizarGraficos();
+    setTimeout(() => {
+        atualizarGraficos();
+    }, 100);
     
     // Mostrar seção de resultados
-    document.getElementById('resultados').style.display = 'block';
+    const resultadosSection = document.getElementById('resultados');
+    if (resultadosSection) {
+        resultadosSection.style.display = 'block';
+    }
 }
 
 /**
@@ -311,6 +331,8 @@ function exibirResultados() {
  */
 function preencherTabelaSimulacao(simulacao) {
     const tbody = document.getElementById('tableBody');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
     simulacao.forEach(ano => {
@@ -337,7 +359,15 @@ function preencherTabelaSimulacao(simulacao) {
  * Atualiza todos os gráficos
  */
 function atualizarGraficos() {
+    if (!calculoAtual) return;
+    
     const calc = calculoAtual;
+    
+    // Destruir gráficos antigos
+    if (chartCustos) chartCustos.destroy();
+    if (chartAcumulado) chartAcumulado.destroy();
+    if (chartConsumo) chartConsumo.destroy();
+    if (chartMensal) chartMensal.destroy();
     
     // Gráfico de custos anuais (Convencional vs Solar)
     criarGraficoCustos(calc);
@@ -358,8 +388,6 @@ function atualizarGraficos() {
 function criarGraficoCustos(calc) {
     const ctx = document.getElementById('chartCustos')?.getContext('2d');
     if (!ctx) return;
-    
-    if (chartCustos) chartCustos.destroy();
     
     const anos = calc.simulacaoAnual.slice(0, 10).map(s => `Ano ${s.ano}`);
     const custosConvencional = calc.simulacaoAnual.slice(0, 10).map(s => s.custoConvencional);
@@ -403,8 +431,6 @@ function criarGraficoCustos(calc) {
 function criarGraficoAcumulado(calc) {
     const ctx = document.getElementById('chartAcumulado')?.getContext('2d');
     if (!ctx) return;
-    
-    if (chartAcumulado) chartAcumulado.destroy();
     
     const anos = calc.simulacaoAnual.map(s => `Ano ${s.ano}`);
     const acumulado = calc.simulacaoAnual.map(s => s.economiaAcumulada);
@@ -454,8 +480,6 @@ function criarGraficoConsumo(calc) {
     const ctx = document.getElementById('chartConsumo')?.getContext('2d');
     if (!ctx) return;
     
-    if (chartConsumo) chartConsumo.destroy();
-    
     chartConsumo = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -486,8 +510,6 @@ function criarGraficoConsumo(calc) {
 function criarGraficoMensal(calc) {
     const ctx = document.getElementById('chartMensal')?.getContext('2d');
     if (!ctx) return;
-    
-    if (chartMensal) chartMensal.destroy();
     
     const consumoMensal = calc.consumoAnual / 12;
     const producaoMensal = calc.producaoSolarAnual / 12;
@@ -541,7 +563,7 @@ function criarGraficoMensal(calc) {
  */
 function salvarCalculo() {
     if (!calculoAtual) {
-        alert('Faça um cálculo primeiro!');
+        mostrarNotificacao('Faça um cálculo primeiro!', 'error');
         return;
     }
     
@@ -552,9 +574,13 @@ function salvarCalculo() {
     };
     
     historico.unshift(calculo);
+    // Manter apenas últimos 20 cálculos
+    if (historico.length > 20) {
+        historico = historico.slice(0, 20);
+    }
     localStorage.setItem('historico_calculos', JSON.stringify(historico));
     
-    alert('Cálculo salvo com sucesso!');
+    mostrarNotificacao('✓ Cálculo salvo com sucesso!', 'success');
     exibirHistorico();
 }
 
@@ -562,9 +588,14 @@ function salvarCalculo() {
  * Carrega o histórico do localStorage
  */
 function carregarHistorico() {
-    const dados = localStorage.getItem('historico_calculos');
-    historico = dados ? JSON.parse(dados) : [];
-    exibirHistorico();
+    try {
+        const dados = localStorage.getItem('historico_calculos');
+        historico = dados ? JSON.parse(dados) : [];
+        exibirHistorico();
+    } catch (e) {
+        console.error('Erro ao carregar histórico:', e);
+        historico = [];
+    }
 }
 
 /**
@@ -572,6 +603,7 @@ function carregarHistorico() {
  */
 function exibirHistorico() {
     const container = document.getElementById('historicoContainer');
+    if (!container) return;
     
     if (historico.length === 0) {
         container.innerHTML = '<p class="text-center">Nenhum cálculo salvo ainda</p>';
@@ -581,7 +613,7 @@ function exibirHistorico() {
     container.innerHTML = historico.map(calc => `
         <div class="historico-item">
             <div class="historico-header">
-                <h4>${calc.numPaineis} painéis</h4>
+                <h4>☀️ ${calc.numPaineis} painéis - ${calc.regiao}</h4>
                 <span class="historico-date">${calc.timestamp}</span>
             </div>
             <div class="historico-body">
@@ -591,16 +623,24 @@ function exibirHistorico() {
                 </div>
                 <div class="historico-row">
                     <span class="historico-label">Economia Anual:</span>
-                    <span class="historico-value">${formatarMoeda(calc.economiaAnual)}</span>
+                    <span class="historico-value" style="color: #10b981; font-weight: bold;">${formatarMoeda(calc.economiaAnual)}</span>
                 </div>
                 <div class="historico-row">
                     <span class="historico-label">Payback:</span>
                     <span class="historico-value">${calc.paybackTime.toFixed(1)} anos</span>
                 </div>
+                <div class="historico-row">
+                    <span class="historico-label">Investimento:</span>
+                    <span class="historico-value">${formatarMoeda(calc.investimentoInicial)}</span>
+                </div>
             </div>
             <div class="historico-actions">
-                <button onclick="carregarCalculoDoHistorico(${calc.id})">Carregar</button>
-                <button onclick="deletarCalculoDoHistorico(${calc.id})">Deletar</button>
+                <button class="btn btn-small" onclick="carregarCalculoDoHistorico(${calc.id})">
+                    <i class="fas fa-redo"></i> Carregar
+                </button>
+                <button class="btn btn-small btn-danger" onclick="deletarCalculoDoHistorico(${calc.id})">
+                    <i class="fas fa-trash"></i> Deletar
+                </button>
             </div>
         </div>
     `).join('');
@@ -611,7 +651,10 @@ function exibirHistorico() {
  */
 function carregarCalculoDoHistorico(id) {
     const calculo = historico.find(c => c.id === id);
-    if (!calculo) return;
+    if (!calculo) {
+        mostrarNotificacao('Cálculo não encontrado', 'error');
+        return;
+    }
     
     // Preencher formulário
     document.getElementById('consumoMensal').value = calculo.consumoMensal;
@@ -628,6 +671,7 @@ function carregarCalculoDoHistorico(id) {
     
     // Scroll para o topo
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    mostrarNotificacao('Cálculo carregado!', 'success');
 }
 
 /**
@@ -638,6 +682,7 @@ function deletarCalculoDoHistorico(id) {
         historico = historico.filter(c => c.id !== id);
         localStorage.setItem('historico_calculos', JSON.stringify(historico));
         exibirHistorico();
+        mostrarNotificacao('Cálculo deletado!', 'success');
     }
 }
 
@@ -660,7 +705,9 @@ function toggleTema() {
     
     // Recriar gráficos com novo tema
     if (calculoAtual) {
-        atualizarGraficos();
+        setTimeout(() => {
+            atualizarGraficos();
+        }, 100);
     }
 }
 
@@ -690,7 +737,7 @@ function aplicarTemaSalvo() {
  */
 function exportarPDF() {
     if (!calculoAtual) {
-        alert('Faça um cálculo primeiro!');
+        mostrarNotificacao('Faça um cálculo primeiro!', 'error');
         return;
     }
     
@@ -740,6 +787,8 @@ Gerado por SolarCalc
     a.download = `relatorio-solar-${Date.now()}.txt`;
     a.click();
     window.URL.revokeObjectURL(url);
+    
+    mostrarNotificacao('Relatório exportado!', 'success');
 }
 
 /**
@@ -747,7 +796,7 @@ Gerado por SolarCalc
  */
 function compartilhar() {
     if (!calculoAtual) {
-        alert('Faça um cálculo primeiro!');
+        mostrarNotificacao('Faça um cálculo primeiro!', 'error');
         return;
     }
     
@@ -773,7 +822,27 @@ Calcule a sua economia em: ${window.location.href}
     } else {
         // Fallback: copiar para clipboard
         navigator.clipboard.writeText(texto);
-        alert('Texto copiado para a área de transferência!');
+        mostrarNotificacao('Texto copiado para a área de transferência!', 'success');
+    }
+}
+
+// ==========================================
+// NOTIFICAÇÕES
+// ==========================================
+
+/**
+ * Mostra notificação ao usuário
+ */
+function mostrarNotificacao(mensagem, tipo = 'info') {
+    // Tentar usar toast se disponível
+    if (window.mostrarToast) {
+        window.mostrarToast(mensagem, tipo);
+    } else {
+        // Fallback para alert
+        if (tipo === 'error') {
+            console.error(mensagem);
+        }
+        alert(mensagem);
     }
 }
 
@@ -812,7 +881,7 @@ function validarDados(dados) {
     }
     
     if (erros.length > 0) {
-        alert('Erros encontrados:\n\n' + erros.join('\n'));
+        mostrarNotificacao('Erros encontrados:\n\n' + erros.join('\n'), 'error');
         return false;
     }
     
