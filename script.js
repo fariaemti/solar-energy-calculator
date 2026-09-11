@@ -66,7 +66,7 @@ function inicializarEventos() {
     }
     
     document.getElementById('exportPDFBtn')?.addEventListener('click', exportarPDF);
-    document.getElementById('salvarCalculoBtn')?.addEventListener('click', salvarCalculo);
+    //document.getElementById('salvarCalculoBtn')?.addEventListener('click', salvarCalculo);
     document.getElementById('compartilharBtn')?.addEventListener('click', compartilhar);
     
     document.getElementById('consumoMensal')?.addEventListener('input', atualizarPreview);
