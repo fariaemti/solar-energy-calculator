@@ -10,13 +10,6 @@
     RewriteRule ^(.*)$ index.php [L]
 </IfModule>
 
-# Permissões do Servidor (Evita o erro AH01630)
-<Directory /var/www/html>
-    Options -Indexes +FollowSymLinks
-    AllowOverride All
-    Require all granted
-</Directory>
-
 # Segurança de Arquivos Sensíveis (Protege banco de dados SQLite e configurações)
 <FilesMatch "\.(db|sqlite|log|env)$">
     Require all denied
