@@ -172,6 +172,7 @@ async function handleCalcular(e) {
     
     if (!validarDados(dados)) return;
     
+    // Tenta calcular via Servidor (rota=calcular), senão faz fallback local
     try {
         const response = await fetch(`${API_URL}?rota=calcular`, {
             method: 'POST',
@@ -206,15 +207,10 @@ function handleLimpar() {
     }
     calculoAtual = null;
     
-    const elConsumo = document.getElementById('consumoAnualDisplay');
-    const elCusto = document.getElementById('custoAnualDisplay');
-    const elPaineis = document.getElementById('numPaineisDisplay');
-    const elEconomia = document.getElementById('economiaAnualDisplay');
-
-    if (elConsumo) elConsumo.textContent = '-';
-    if (elCusto) elCusto.textContent = '-';
-    if (elPaineis) elPaineis.textContent = '-';
-    if (elEconomia) elEconomia.textContent = '-';
+    document.getElementById('consumoAnualDisplay').textContent = '-';
+    document.getElementById('custoAnualDisplay').textContent = '-';
+    document.getElementById('numPaineisDisplay').textContent = '-';
+    document.getElementById('economiaAnualDisplay').textContent = '-';
 }
 
 function atualizarPreview() {
@@ -427,6 +423,7 @@ async function salvarCalculo() {
     const id = Date.now();
     const calculo = { id, ...calculoAtual };
     
+    // Tenta salvar no backend via rota=salvar
     try {
         await fetch(`${API_URL}?rota=salvar`, {
             method: 'POST',
@@ -448,6 +445,7 @@ async function salvarCalculo() {
 }
 
 async function carregarHistorico() {
+    // Tenta buscar o histórico do backend (rota=historico)
     try {
         const response = await fetch(`${API_URL}?rota=historico`);
         if (response.ok) {
@@ -463,6 +461,7 @@ async function carregarHistorico() {
         console.warn('Sem acesso à API de histórico. Usando LocalStorage.');
     }
 
+    // Fallback no LocalStorage
     try {
         const dados = localStorage.getItem('historico_calculos');
         historico = dados ? JSON.parse(dados) : [];
@@ -517,6 +516,7 @@ function exibirHistorico() {
 window.carregarCalculoDoHistorico = async function(id) {
     let calculo = historico.find(c => c.id === id);
     
+    // Tenta buscar diretamente do backend caso não esteja em memória local (rota=obter)
     if (!calculo) {
         try {
             const response = await fetch(`${API_URL}?rota=obter&id=${id}`);
@@ -551,6 +551,7 @@ window.carregarCalculoDoHistorico = async function(id) {
 
 window.deletarCalculoDoHistorico = async function(id) {
     if (confirm('Tem certeza que deseja deletar este cálculo?')) {
+        // Notifica o backend (rota=deletar)
         try {
             await fetch(`${API_URL}?rota=deletar`, {
                 method: 'DELETE',
@@ -616,7 +617,8 @@ function exportarPDF() {
     }
     
     const calc = calculoAtual;
-    let conteudo = `RELATÓRIO DE SIMULAÇÃO DE ECONOMIA SOLAR
+    let conteudo = `
+RELATÓRIO DE SIMULAÇÃO DE ECONOMIA SOLAR
 Calculadora do EMTI
 =========================================
 
@@ -638,17 +640,14 @@ RESULTADOS DO CÁLCULO:
 - ROI Anual: ${calc.roiAnual}%
 - Economia Total (${calc.anos} anos): R$ ${formatarNumero(calc.economiaTotal)}
 - CO₂ Evitado por Ano: ${calc.co2EvitadoAnual} ton
-`;
+    `;
     
-    const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8;' });
+    const blob = new Blob([conteudo], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `relatorio-solar-${Date.now()}.txt`;
-    
-    document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
     
     mostrarNotificacao('Relatório exportado!', 'success');
