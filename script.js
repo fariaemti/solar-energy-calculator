@@ -36,7 +36,6 @@ let chartCustos = null;
 let chartAcumulado = null;
 let chartConsumo = null;
 let chartMensal = null;
-let historico = [];
 
 // ==========================================
 // INICIALIZAÇÃO
@@ -44,7 +43,6 @@ let historico = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     inicializarEventos();
-    carregarHistorico();
     aplicarTemaSalvo();
     inicializarMobile();
 });
@@ -66,7 +64,6 @@ function inicializarEventos() {
     }
     
     document.getElementById('exportPDFBtn')?.addEventListener('click', exportarPDF);
-    //document.getElementById('salvarCalculoBtn')?.addEventListener('click', salvarCalculo);
     document.getElementById('compartilharBtn')?.addEventListener('click', compartilhar);
     
     document.getElementById('consumoMensal')?.addEventListener('input', atualizarPreview);
@@ -251,7 +248,7 @@ function exibirResultados() {
     document.getElementById('economiaTotal').textContent = formatarMoeda(calc.economiaTotal);
     document.getElementById('co2Evitado').textContent = Number(calc.co2EvitadoAnual).toFixed(2) + ' ton';
     
-    preencherTabelaSimulacao(calc.simulacaoAnual);
+    preencherTabelaSimulacao(calc.simulacaoAnual, calc.paybackTime);
     
     setTimeout(() => {
         atualizarGraficos();
@@ -263,23 +260,43 @@ function exibirResultados() {
     }
 }
 
-function preencherTabelaSimulacao(simulacao) {
+function preencherTabelaSimulacao(simulacao, paybackTime) {
     const tbody = document.getElementById('tableBody');
     if (!tbody) return;
     
     tbody.innerHTML = '';
     
-    simulacao.forEach(ano => {
+    const anoPayback = Math.ceil(paybackTime || 5);
+    const anosTotal = simulacao.length;
+    
+    // Filtramos apenas os marcos temporais estratégicos
+    const anosMarcos = [1, anoPayback, 10, 15, 20, anosTotal];
+    const anosExibir = [...new Set(anosMarcos)].filter(a => a <= anosTotal).sort((a, b) => a - b);
+    
+    anosExibir.forEach(anoNum => {
+        const dadosAno = simulacao.find(item => item.ano === anoNum);
+        if (!dadosAno) return;
+
+        let statusText = 'Amortização';
+        let statusClass = 'negative';
+
+        if (anoNum === anoPayback) {
+            statusText = 'Payback Atingido 🎯';
+            statusClass = 'positive';
+        } else if (anoNum > anoPayback) {
+            statusText = 'Lucro Líquido 💚';
+            statusClass = 'positive';
+        }
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><strong>Ano ${ano.ano}</strong></td>
-            <td>${formatarMoeda(ano.custoConvencional)}</td>
-            <td>${formatarNumero(ano.producaoSolar)} kWh</td>
-            <td class="highlight">${formatarMoeda(ano.economiaAnual)}</td>
-            <td class="highlight"><strong>${formatarMoeda(ano.economiaAcumulada)}</strong></td>
-            <td class="${ano.lucroLiquido > 0 ? 'positive' : 'negative'}">
-                ${formatarMoeda(ano.lucroLiquido)}
+            <td><strong>Ano ${dadosAno.ano}</strong></td>
+            <td>${formatarNumero(dadosAno.producaoSolar)} kWh</td>
+            <td class="highlight">${formatarMoeda(dadosAno.economiaAnual)}</td>
+            <td class="${dadosAno.economiaAcumulada >= 0 ? 'highlight positive' : 'negative'}">
+                <strong>${formatarMoeda(dadosAno.economiaAcumulada)}</strong>
             </td>
+            <td class="${statusClass}">${statusText}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -415,160 +432,6 @@ function criarGraficoMensal(calc) {
 }
 
 // ==========================================
-// ARMAZENAMENTO E HISTÓRICO
-// ==========================================
-
-async function salvarCalculo() {
-    if (!calculoAtual) {
-        mostrarNotificacao('Faça um cálculo primeiro!', 'error');
-        return;
-    }
-    
-    const id = Date.now();
-    const calculo = { id, ...calculoAtual };
-    
-    try {
-        await fetch(`${API_URL}?rota=salvar`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(calculo)
-        });
-    } catch (e) {
-        console.warn('Backend indisponível, salvando apenas localmente');
-    }
-    
-    historico.unshift(calculo);
-    if (historico.length > 20) {
-        historico = historico.slice(0, 20);
-    }
-    localStorage.setItem('historico_calculos', JSON.stringify(historico));
-    
-    mostrarNotificacao('✓ Cálculo salvo com sucesso!', 'success');
-    exibirHistorico();
-}
-
-async function carregarHistorico() {
-    try {
-        const response = await fetch(`${API_URL}?rota=historico`);
-        if (response.ok) {
-            const data = await response.json();
-            if (Array.isArray(data) && data.length > 0) {
-                historico = data;
-                localStorage.setItem('historico_calculos', JSON.stringify(historico));
-                exibirHistorico();
-                return;
-            }
-        }
-    } catch (e) {
-        console.warn('Sem acesso à API de histórico. Usando LocalStorage.');
-    }
-
-    try {
-        const dados = localStorage.getItem('historico_calculos');
-        historico = dados ? JSON.parse(dados) : [];
-        exibirHistorico();
-    } catch (e) {
-        console.error('Erro ao carregar histórico:', e);
-        historico = [];
-    }
-}
-
-function exibirHistorico() {
-    const container = document.getElementById('historicoContainer');
-    if (!container) return;
-    
-    if (historico.length === 0) {
-        container.innerHTML = '<p class="text-center">Nenhum cálculo salvo ainda</p>';
-        return;
-    }
-    
-    container.innerHTML = historico.map(calc => `
-        <div class="historico-item">
-            <div class="historico-header">
-                <h4>☀️ ${calc.numPaineis} painéis - ${calc.regiao}</h4>
-                <span class="historico-date">${calc.timestamp || ''}</span>
-            </div>
-            <div class="historico-body">
-                <div class="historico-row">
-                    <span class="historico-label">Consumo Anual:</span>
-                    <span class="historico-value">${formatarNumero(calc.consumoAnual)} kWh</span>
-                </div>
-                <div class="historico-row">
-                    <span class="historico-label">Economia Anual:</span>
-                    <span class="historico-value" style="color: #10b981; font-weight: bold;">${formatarMoeda(calc.economiaAnual)}</span>
-                </div>
-                <div class="historico-row">
-                    <span class="historico-label">Payback:</span>
-                    <span class="historico-value">${Number(calc.paybackTime).toFixed(1)} anos</span>
-                </div>
-                <div class="historico-row">
-                    <span class="historico-label">Investimento:</span>
-                    <span class="historico-value">${formatarMoeda(calc.investimentoInicial)}</span>
-                </div>
-            </div>
-            <div class="historico-actions">
-                <button class="btn btn-small" onclick="carregarCalculoDoHistorico(${calc.id})">Carregar</button>
-                <button class="btn btn-small btn-danger" onclick="deletarCalculoDoHistorico(${calc.id})">Deletar</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-window.carregarCalculoDoHistorico = async function(id) {
-    let calculo = historico.find(c => c.id === id);
-    
-    if (!calculo) {
-        try {
-            const response = await fetch(`${API_URL}?rota=obter&id=${id}`);
-            if (response.ok) {
-                const res = await response.json();
-                calculo = res.data || res;
-            }
-        } catch (e) {
-            console.error('Erro ao obter do backend', e);
-        }
-    }
-
-    if (!calculo) {
-        mostrarNotificacao('Cálculo não encontrado', 'error');
-        return;
-    }
-    
-    document.getElementById('consumoMensal').value = calculo.consumoMensal;
-    document.getElementById('tarifaEnergia').value = calculo.tarifaEnergia;
-    document.getElementById('numPessoas').value = calculo.numPessoas;
-    document.getElementById('tipoResidencia').value = calculo.tipoResidencia;
-    document.getElementById('areaDisponivel').value = calculo.areaDisponivel;
-    document.getElementById('regiao').value = calculo.regiao;
-    document.getElementById('custoPainel').value = calculo.custoPainel;
-    document.getElementById('anos').value = calculo.anos;
-    
-    calculoAtual = calculo;
-    exibirResultados();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    mostrarNotificacao('Cálculo carregado!', 'success');
-};
-
-window.deletarCalculoDoHistorico = async function(id) {
-    if (confirm('Tem certeza que deseja deletar este cálculo?')) {
-        try {
-            await fetch(`${API_URL}?rota=deletar`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id })
-            });
-        } catch (e) {
-            console.warn('Erro ao deletar no servidor');
-        }
-
-        historico = historico.filter(c => c.id !== id);
-        localStorage.setItem('historico_calculos', JSON.stringify(historico));
-        exibirHistorico();
-        mostrarNotificacao('Cálculo deletado!', 'success');
-    }
-};
-
-// ==========================================
 // TEMA ESCURO/CLARO
 // ==========================================
 
@@ -616,8 +479,21 @@ function exportarPDF() {
     }
     
     const calc = calculoAtual;
-    let conteudo = `RELATÓRIO DE SIMULAÇÃO DE ECONOMIA SOLAR
-Calculadora do EMTI
+    const anoPayback = Math.ceil(calc.paybackTime || 5);
+    const anosTotal = calc.simulacaoAnual.length;
+    const anosMarcos = [...new Set([1, anoPayback, 10, 15, 20, anosTotal])].filter(a => a <= anosTotal).sort((a, b) => a - b);
+    
+    let marcosTexto = '';
+    anosMarcos.forEach(a => {
+        const d = calc.simulacaoAnual.find(item => item.ano === a);
+        if (d) {
+            marcosTexto += `- Ano ${d.ano}: Produção ${formatarNumero(d.producaoSolar)} kWh | Economia Acumulada: R$ ${formatarNumero(d.economiaAcumulada)}\n`;
+        }
+    });
+
+    let conteudo = `=========================================
+RELATÓRIO DE SIMULAÇÃO DE ECONOMIA SOLAR
+Projeto do 3º EMTI — Feira de 2026
 =========================================
 
 DATA: ${calc.timestamp || new Date().toLocaleString('pt-BR')}
@@ -638,7 +514,9 @@ RESULTADOS DO CÁLCULO:
 - ROI Anual: ${calc.roiAnual}%
 - Economia Total (${calc.anos} anos): R$ ${formatarNumero(calc.economiaTotal)}
 - CO₂ Evitado por Ano: ${calc.co2EvitadoAnual} ton
-`;
+
+MARCOS TEMPORAIS DE RETORNO:
+${marcosTexto}`;
     
     const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
