@@ -12,9 +12,10 @@ RUN a2enmod rewrite
 # Copia os arquivos do projeto para o servidor
 COPY . /var/www/html/
 
-# Configura permissões para o SQLite conseguir escrever no banco
+# Configura permissões para leitura geral do Apache e escrita no banco SQLite
 RUN mkdir -p /var/www/html/data \
     && chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/data
 
 EXPOSE 80
