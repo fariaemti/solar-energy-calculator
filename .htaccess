@@ -2,15 +2,32 @@
     RewriteEngine On
     RewriteBase /
     
-    # Não reescrever se for arquivo ou diretório real
+    # Não reescrever se for arquivo ou diretório existente
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     
-    # Redirecionar requisições para o index.php
-    RewriteRule ^(.*)$ index.html [L]
+    # Redireciona rotas virtuais para o index.php
+    RewriteRule ^(.*)$ index.php [L]
 </IfModule>
 
-# Melhorar performance
+# Permissões do Servidor (Evita o erro AH01630)
+<Directory /var/www/html>
+    Options -Indexes +FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+
+# Segurança de Arquivos Sensíveis (Protege banco de dados SQLite e configurações)
+<FilesMatch "\.(db|sqlite|log|env)$">
+    Require all denied
+</FilesMatch>
+
+# Permitir execução e leitura web nos scripts e arquivos gerais
+<FilesMatch "\.(php|html|css|js|png|jpg|jpeg|gif|ico|svg|json)$">
+    Require all granted
+</FilesMatch>
+
+# Melhorar performance (Cache no Navegador)
 <IfModule mod_expires.c>
     ExpiresActive On
     ExpiresByType text/html "access plus 1 week"
@@ -20,18 +37,10 @@
     ExpiresByType image/jpeg "access plus 1 month"
     ExpiresByType image/gif "access plus 1 month"
     ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
 </IfModule>
 
 # Compressão GZIP
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/xml+rss
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
 </IfModule>
-
-# Segurança
-<FilesMatch "\.php$">
-    Require all denied
-</FilesMatch>
-
-<FilesMatch "^(process|database)\.php$">
-    Require all granted
-</FilesMatch>
