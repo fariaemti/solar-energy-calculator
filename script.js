@@ -291,6 +291,7 @@ function preencherTabelaSimulacao(simulacao, paybackTime) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>Ano ${dadosAno.ano}</strong></td>
+            <td>${formatarMoeda(dadosAno.custoConvencional)}</td>
             <td>${formatarNumero(dadosAno.producaoSolar)} kWh</td>
             <td class="highlight">${formatarMoeda(dadosAno.economiaAnual)}</td>
             <td class="${dadosAno.economiaAcumulada >= 0 ? 'highlight positive' : 'negative'}">
