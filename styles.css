@@ -806,15 +806,15 @@ canvas {
    ======================================== */
 @media (max-width: 768px) {
     .navbar-content {
-        flex-direction: column;
-        gap: var(--spacing-md);
-        padding: var(--spacing-sm) 0;
+        flex-direction: row; /* Mantém o logo e o botão de tema lado a lado */
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-md);
     }
 
     .nav-links {
-        gap: var(--spacing-md);
-        flex-wrap: wrap;
-        justify-content: center;
+        display: none; /* Garante que links extras não quebrem o layout se houverem */
     }
 
     .calculator-container {
