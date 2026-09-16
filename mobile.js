@@ -3,66 +3,6 @@
    ======================================== */
 
 // ==========================================
-// MENU MOBILE
-// ==========================================
-
-/**
- * Inicializa menu mobile hamburger com suporte ao Material Symbols
- */
-function inicializarMenuMobile() {
-    const navbarContent = document.querySelector('.navbar-content');
-    if (!navbarContent) return;
-    
-    // Criar botão de menu se não existir
-    if (!document.querySelector('.menu-toggle')) {
-        const menuToggle = document.createElement('button');
-        menuToggle.className = 'menu-toggle';
-        menuToggle.setAttribute('aria-label', 'Abrir Menu');
-        menuToggle.innerHTML = '<span class="material-symbols-outlined">menu</span>';
-        
-        const navLinks = document.querySelector('.nav-links');
-        if (navLinks) {
-            navbarContent.insertBefore(menuToggle, navLinks);
-        } else {
-            navbarContent.appendChild(menuToggle);
-        }
-        
-        menuToggle.addEventListener('click', toggleMenu);
-    }
-    
-    // Fechar menu ao clicar em um link
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', () => {
-            if (window.innerWidth <= 768) {
-                const navLinks = document.querySelector('.nav-links');
-                const menuIcon = document.querySelector('.menu-toggle .material-symbols-outlined');
-                
-                if (navLinks) navLinks.classList.remove('active');
-                if (menuIcon) menuIcon.textContent = 'menu';
-            }
-        });
-    });
-}
-
-/**
- * Toggle do menu mobile
- */
-function toggleMenu() {
-    const navLinks = document.querySelector('.nav-links');
-    const menuIcon = document.querySelector('.menu-toggle .material-symbols-outlined');
-    
-    if (!navLinks) return;
-    
-    if (navLinks.classList.contains('active')) {
-        navLinks.classList.remove('active');
-        if (menuIcon) menuIcon.textContent = 'menu';
-    } else {
-        navLinks.classList.add('active');
-        if (menuIcon) menuIcon.textContent = 'close';
-    }
-}
-
-// ==========================================
 // OTIMIZAÇÕES PARA TOUCH
 // ==========================================
 
@@ -250,7 +190,6 @@ function limparStorageAntigo() {
 }
 
 function inicializarMobile() {
-    inicializarMenuMobile();
     otimizarInputsMobile();
     detectarOrientacao();
     lidarMudancaOrientacao();
@@ -269,39 +208,9 @@ document.addEventListener('DOMContentLoaded', () => {
     inicializarMobile();
 });
 
-// Estilos de animação e menu mobile CSS injetados dinamicamente
+// Estilos de animação dos Toasts injetados dinamicamente
 const style = document.createElement('style');
 style.textContent = `
-    .menu-toggle {
-        background: none;
-        border: none;
-        color: var(--text-dark);
-        font-size: 1.8rem;
-        cursor: pointer;
-        display: none;
-        padding: 0.25rem;
-    }
-
-    @media (max-width: 768px) {
-        .menu-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .nav-links {
-            display: none;
-            flex-direction: column;
-            width: 100%;
-            padding: 1rem 0;
-            gap: 1rem;
-        }
-
-        .nav-links.active {
-            display: flex;
-        }
-    }
-
     @keyframes slideUp {
         from {
             transform: translate(-50%, 100px);
