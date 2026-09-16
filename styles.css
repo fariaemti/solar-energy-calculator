@@ -183,6 +183,20 @@ body {
 }
 
 /* ========================================
+   CORREÇÃO DEFINITIVA DO BOTÃO DE TEMA
+   ======================================== */
+.theme-btn, 
+.theme-btn .material-symbols-outlined {
+    color: var(--text-dark) !important;
+    background: transparent !important;
+}
+
+.theme-btn:hover, 
+.theme-btn:hover .material-symbols-outlined {
+    color: var(--primary-color) !important;
+}
+
+/* ========================================
    HERO SECTION
    ======================================== */
 .hero {
@@ -806,7 +820,7 @@ canvas {
    ======================================== */
 @media (max-width: 768px) {
     .navbar-content {
-        flex-direction: row; /* Mantém o logo e o botão de tema lado a lado */
+        flex-direction: row; 
         justify-content: space-between;
         align-items: center;
         width: 100%;
@@ -814,7 +828,7 @@ canvas {
     }
 
     .nav-links {
-        display: none; /* Garante que links extras não quebrem o layout se houverem */
+        display: none; 
     }
 
     .calculator-container {
@@ -850,7 +864,26 @@ canvas {
     .form-group input,
     .form-group select,
     .btn {
-        font-size: 16px !important; /* Previne auto-zoom no Safari/Chrome iOS */
+        font-size: 16px !important; 
+    }
+
+    /* DESATIVA ANIMAÇÕES PESADAS E TRANSLATES NO MOBILE PARA EVITAR TRAVAMENTOS */
+    .result-card,
+    .dashboard-card,
+    .chart-container,
+    .historico-item {
+        animation: none !important;
+        transform: none !important;
+    }
+
+    .result-card:hover,
+    .dashboard-card:hover,
+    .info-card:hover,
+    .historico-item:hover,
+    .btn-primary:hover,
+    .btn-secondary:hover {
+        transform: none !important;
+        box-shadow: var(--shadow-md);
     }
 }
 
@@ -904,7 +937,7 @@ canvas {
 }
 
 /* ========================================
-   ANIMAÇÕES E UTILITÁRIOS
+   ANIMAÇÕES E UTILITÁRIOS (DESKTOP)
    ======================================== */
 @keyframes fadeIn {
     from {
@@ -917,11 +950,13 @@ canvas {
     }
 }
 
-.result-card,
-.dashboard-card,
-.chart-container,
-.historico-item {
-    animation: fadeIn 0.4s ease-out;
+@media (min-width: 769px) {
+    .result-card,
+    .dashboard-card,
+    .chart-container,
+    .historico-item {
+        animation: fadeIn 0.4s ease-out;
+    }
 }
 
 .hidden {
