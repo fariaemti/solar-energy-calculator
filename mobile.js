@@ -3,7 +3,7 @@
    ======================================== */
 
 // ==========================================
-// OTIMIZAÇÕES PARA TOUCH
+// OTIMIZAÇÕES PARA TOUCH E ORIENTAÇÃO
 // ==========================================
 
 /**
@@ -14,9 +14,11 @@ function ehMobile() {
 }
 
 /**
- * Detectar orientação
+ * Detectar e aplicar classe de orientação no body
  */
 function detectarOrientacao() {
+    if (!document.body) return;
+    
     if (window.matchMedia('(orientation: portrait)').matches) {
         document.body.classList.add('portrait');
         document.body.classList.remove('landscape');
@@ -30,26 +32,33 @@ function detectarOrientacao() {
  * Lidar com mudança de orientação
  */
 function lidarMudancaOrientacao() {
-    window.addEventListener('orientationchange', () => {
+    const recalcular = () => {
         detectarOrientacao();
-        
         setTimeout(() => {
             if (typeof calculoAtual !== 'undefined' && calculoAtual && typeof atualizarGraficos === 'function') {
                 atualizarGraficos();
             }
         }, 300);
-    });
+    };
+
+    window.addEventListener('orientationchange', recalcular);
+    
+    if (window.matchMedia) {
+        window.matchMedia('(orientation: portrait)').addEventListener('change', recalcular);
+    }
 }
 
 /**
- * Otimizar inputs para mobile
+ * Otimizar inputs para dispositivos móveis
  */
 function otimizarInputsMobile() {
     if (!ehMobile()) return;
     
-    // Prevenir zoom automático no iOS
+    // Prevenir zoom automático em navegadores iOS/Safari
     document.querySelectorAll('input, select, textarea').forEach(input => {
-        input.style.fontSize = '16px';
+        if (!input.style.fontSize) {
+            input.style.fontSize = '16px';
+        }
     });
     
     const inputsConfig = [
@@ -124,15 +133,15 @@ const handleResizeChart = debounce(() => {
 // ==========================================
 
 /**
- * Exibe notificação no estilo Toast
+ * Exibe notificação no estilo Toast com suporte a múltiplas linhas
  */
-function mostrarToast(mensagem, tipo = 'info', duracao = 3000) {
+function mostrarToast(mensagem, tipo = 'info', duracao = 4000) {
     const toastAntigo = document.querySelector('.toast');
     if (toastAntigo) toastAntigo.remove();
 
     const toast = document.createElement('div');
     toast.className = `toast toast-${tipo}`;
-    toast.textContent = mensagem;
+    toast.innerText = mensagem;
     toast.style.cssText = `
         position: fixed;
         bottom: 20px;
@@ -149,6 +158,7 @@ function mostrarToast(mensagem, tipo = 'info', duracao = 3000) {
         z-index: 9999;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         animation: slideUp 0.3s ease;
+        white-space: pre-line;
     `;
     
     document.body.appendChild(toast);
@@ -189,7 +199,13 @@ function limparStorageAntigo() {
     }
 }
 
+// Flag para evitar dupla inicialização
+let mobileInicializado = false;
+
 function inicializarMobile() {
+    if (mobileInicializado) return;
+    mobileInicializado = true;
+
     otimizarInputsMobile();
     detectarOrientacao();
     lidarMudancaOrientacao();
@@ -204,9 +220,12 @@ function inicializarMobile() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// Inicializa quando o DOM estiver pronto
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializarMobile);
+} else {
     inicializarMobile();
-});
+}
 
 // Estilos de animação dos Toasts injetados dinamicamente
 const style = document.createElement('style');
