@@ -44,7 +44,9 @@ let chartMensal = null;
 document.addEventListener('DOMContentLoaded', () => {
     inicializarEventos();
     aplicarTemaSalvo();
-    inicializarMobile();
+    if (typeof inicializarMobile === 'function') {
+        inicializarMobile();
+    }
 });
 
 // ==========================================
@@ -70,6 +72,21 @@ function inicializarEventos() {
     document.getElementById('tarifaEnergia')?.addEventListener('input', atualizarPreview);
 }
 
+// Helper para ler campos numéricos de forma segura aceitando vírgulas
+function obterValorNumerico(id, valorPadrao = 0) {
+    const el = document.getElementById(id);
+    if (!el || !el.value) return valorPadrao;
+    const valSanitizado = el.value.toString().replace(',', '.');
+    const num = parseFloat(valSanitizado);
+    return isNaN(num) ? valorPadrao : num;
+}
+
+// Helper para obter textos ou seleções sem erro
+function obterValorTexto(id, valorPadrao = '') {
+    const el = document.getElementById(id);
+    return el ? el.value : valorPadrao;
+}
+
 // ==========================================
 // CÁLCULOS PRINCIPAIS
 // ==========================================
@@ -89,8 +106,8 @@ function calcularEconomiaSolar(dados) {
                                CONSTANTES.EFICIENCIA_SISTEMA;
     
     const economiaAnual = Math.min(consumoAnual, producaoSolarAnual) * dados.tarifaEnergia;
-    const paybackTime = investimentoInicial / economiaAnual;
-    const roiAnual = (economiaAnual / investimentoInicial) * 100;
+    const paybackTime = investimentoInicial / (economiaAnual || 1);
+    const roiAnual = (economiaAnual / (investimentoInicial || 1)) * 100;
     const co2EvitadoAnual = (producaoSolarAnual * CONSTANTES.CO2_POR_KWH) / 1000;
     
     const simulacaoAnual = gerarSimulacaoAnual(
@@ -101,7 +118,7 @@ function calcularEconomiaSolar(dados) {
         dados.tarifaEnergia
     );
     
-    const economiaTotal = simulacaoAnual[simulacaoAnual.length - 1].economiaAcumulada;
+    const economiaTotal = simulacaoAnual.length > 0 ? simulacaoAnual[simulacaoAnual.length - 1].economiaAcumulada : 0;
     
     return {
         ...dados,
@@ -157,14 +174,14 @@ async function handleCalcular(e) {
     e.preventDefault();
     
     const dados = {
-        consumoMensal: parseFloat(document.getElementById('consumoMensal').value),
-        tarifaEnergia: parseFloat(document.getElementById('tarifaEnergia').value),
-        numPessoas: document.getElementById('numPessoas').value,
-        tipoResidencia: document.getElementById('tipoResidencia').value,
-        areaDisponivel: parseFloat(document.getElementById('areaDisponivel').value),
-        regiao: document.getElementById('regiao').value,
-        custoPainel: parseFloat(document.getElementById('custoPainel').value),
-        anos: parseInt(document.getElementById('anos').value)
+        consumoMensal: obterValorNumerico('consumoMensal'),
+        tarifaEnergia: obterValorNumerico('tarifaEnergia'),
+        numPessoas: obterValorTexto('numPessoas', '3-4'),
+        tipoResidencia: obterValorTexto('tipoResidencia', 'casa'),
+        areaDisponivel: obterValorNumerico('areaDisponivel', 30),
+        regiao: obterValorTexto('regiao', 'sudeste'),
+        custoPainel: obterValorNumerico('custoPainel', 800), // Padrão de R$ 800 se omitido
+        anos: parseInt(obterValorNumerico('anos', 25))        // Padrão de 25 anos se omitido
     };
     
     if (!validarDados(dados)) return;
@@ -203,27 +220,30 @@ function handleLimpar() {
     }
     calculoAtual = null;
     
-    const elConsumo = document.getElementById('consumoAnualDisplay');
-    const elCusto = document.getElementById('custoAnualDisplay');
-    const elPaineis = document.getElementById('numPaineisDisplay');
-    const elEconomia = document.getElementById('economiaAnualDisplay');
+    const atualizarTexto = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
 
-    if (elConsumo) elConsumo.textContent = '-';
-    if (elCusto) elCusto.textContent = '-';
-    if (elPaineis) elPaineis.textContent = '-';
-    if (elEconomia) elEconomia.textContent = '-';
+    atualizarTexto('consumoAnualDisplay', '-');
+    atualizarTexto('custoAnualDisplay', '-');
+    atualizarTexto('numPaineisDisplay', '-');
+    atualizarTexto('economiaAnualDisplay', '-');
 }
 
 function atualizarPreview() {
-    const consumo = parseFloat(document.getElementById('consumoMensal').value) || 0;
-    const tarifa = parseFloat(document.getElementById('tarifaEnergia').value) || 0;
+    const consumo = obterValorNumerico('consumoMensal');
+    const tarifa = obterValorNumerico('tarifaEnergia');
     
     if (consumo > 0 && tarifa > 0) {
         const consumoAnual = consumo * 12;
         const custoAnual = consumoAnual * tarifa;
         
-        document.getElementById('consumoAnualDisplay').textContent = formatarNumero(consumoAnual);
-        document.getElementById('custoAnualDisplay').textContent = formatarMoeda(custoAnual);
+        const elConsumo = document.getElementById('consumoAnualDisplay');
+        const elCusto = document.getElementById('custoAnualDisplay');
+        
+        if (elConsumo) elConsumo.textContent = formatarNumero(consumoAnual);
+        if (elCusto) elCusto.textContent = formatarMoeda(custoAnual);
     }
 }
 
@@ -236,17 +256,22 @@ function exibirResultados() {
     
     const calc = calculoAtual;
     
-    document.getElementById('consumoAnualDisplay').textContent = formatarNumero(calc.consumoAnual);
-    document.getElementById('custoAnualDisplay').textContent = formatarMoeda(calc.custoAnualConvencional);
-    document.getElementById('numPaineisDisplay').textContent = calc.numPaineis;
-    document.getElementById('economiaAnualDisplay').textContent = formatarMoeda(calc.economiaAnual);
+    const preencherElemento = (id, texto) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = texto;
+    };
+
+    preencherElemento('consumoAnualDisplay', formatarNumero(calc.consumoAnual));
+    preencherElemento('custoAnualDisplay', formatarMoeda(calc.custoAnualConvencional));
+    preencherElemento('numPaineisDisplay', calc.numPaineis);
+    preencherElemento('economiaAnualDisplay', formatarMoeda(calc.economiaAnual));
     
-    document.getElementById('investimentoInicial').textContent = formatarMoeda(calc.investimentoInicial);
-    document.getElementById('economia1Ano').textContent = formatarMoeda(calc.economiaAnual);
-    document.getElementById('roiAnual').textContent = Number(calc.roiAnual).toFixed(2) + '%';
-    document.getElementById('paybackTime').textContent = Number(calc.paybackTime).toFixed(1) + ' anos';
-    document.getElementById('economiaTotal').textContent = formatarMoeda(calc.economiaTotal);
-    document.getElementById('co2Evitado').textContent = Number(calc.co2EvitadoAnual).toFixed(2) + ' ton';
+    preencherElemento('investimentoInicial', formatarMoeda(calc.investimentoInicial));
+    preencherElemento('economia1Ano', formatarMoeda(calc.economiaAnual));
+    preencherElemento('roiAnual', Number(calc.roiAnual).toFixed(2) + '%');
+    preencherElemento('paybackTime', Number(calc.paybackTime).toFixed(1) + ' anos');
+    preencherElemento('economiaTotal', formatarMoeda(calc.economiaTotal));
+    preencherElemento('co2Evitado', Number(calc.co2EvitadoAnual).toFixed(2) + ' ton');
     
     preencherTabelaSimulacao(calc.simulacaoAnual, calc.paybackTime);
     
@@ -269,7 +294,6 @@ function preencherTabelaSimulacao(simulacao, paybackTime) {
     const anoPayback = Math.ceil(paybackTime || 5);
     const anosTotal = simulacao.length;
     
-    // Filtramos apenas os marcos temporais estratégicos
     const anosMarcos = [1, anoPayback, 10, 15, 20, anosTotal];
     const anosExibir = [...new Set(anosMarcos)].filter(a => a <= anosTotal).sort((a, b) => a - b);
     
@@ -308,7 +332,7 @@ function preencherTabelaSimulacao(simulacao, paybackTime) {
 // ==========================================
 
 function atualizarGraficos() {
-    if (!calculoAtual) return;
+    if (!calculoAtual || typeof Chart === 'undefined') return;
     
     const calc = calculoAtual;
     
@@ -559,24 +583,28 @@ function compartilhar() {
 // ==========================================
 
 function mostrarNotificacao(mensagem, tipo = 'info') {
-    if (tipo === 'error') {
-        console.error(mensagem);
+    if (typeof mostrarToast === 'function') {
+        mostrarToast(mensagem, tipo);
+    } else {
+        alert(mensagem);
     }
-    alert(mensagem);
 }
 
 function validarDados(dados) {
     const erros = [];
     
-    if (dados.consumoMensal < 50 || dados.consumoMensal > 5000) erros.push('Consumo mensal deve estar entre 50 e 5000 kWh');
-    if (dados.tarifaEnergia < 0.10 || dados.tarifaEnergia > 2.00) erros.push('Tarifa deve estar entre R$ 0.10 e R$ 2.00');
-    if (!dados.numPessoas) erros.push('Selecione o número de pessoas');
-    if (!dados.tipoResidencia) erros.push('Selecione o tipo de residência');
-    if (dados.areaDisponivel < 5 || dados.areaDisponivel > 500) erros.push('Área disponível deve estar entre 5 e 500 m²');
-    if (!dados.regiao) erros.push('Selecione a região');
+    if (!dados.consumoMensal || dados.consumoMensal < 50 || dados.consumoMensal > 5000) {
+        erros.push('Consumo mensal deve estar entre 50 e 5000 kWh');
+    }
+    if (!dados.tarifaEnergia || dados.tarifaEnergia < 0.10 || dados.tarifaEnergia > 2.00) {
+        erros.push('Tarifa deve estar entre R$ 0.10 e R$ 2.00');
+    }
+    if (!dados.areaDisponivel || dados.areaDisponivel < 5 || dados.areaDisponivel > 500) {
+        erros.push('Área disponível deve estar entre 5 e 500 m²');
+    }
     
     if (erros.length > 0) {
-        mostrarNotificacao('Erros encontrados:\n\n' + erros.join('\n'), 'error');
+        mostrarNotificacao('Atenção aos dados informados:\n\n' + erros.join('\n'), 'error');
         return false;
     }
     
@@ -589,31 +617,4 @@ function formatarNumero(num) {
 
 function formatarMoeda(valor) {
     return parseFloat(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// ==========================================
-// COMPATIBILIDADE MOBILE
-// ==========================================
-
-function inicializarMobile() {
-    if (ehMobile()) {
-        document.body.classList.add('mobile');
-        otimizarInputsMobile();
-    }
-}
-
-function ehMobile() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
-
-function otimizarInputsMobile() {
-    document.querySelectorAll('input, select, textarea').forEach(input => {
-        input.style.fontSize = '16px';
-    });
-    
-    document.getElementById('consumoMensal')?.setAttribute('inputmode', 'decimal');
-    document.getElementById('tarifaEnergia')?.setAttribute('inputmode', 'decimal');
-    document.getElementById('areaDisponivel')?.setAttribute('inputmode', 'decimal');
-    document.getElementById('custoPainel')?.setAttribute('inputmode', 'decimal');
-    document.getElementById('anos')?.setAttribute('inputmode', 'numeric');
 }
