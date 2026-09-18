@@ -32,8 +32,8 @@ body > *:first-child,
 header,
 .navbar,
 .hero {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
+    margin-top: 3.5 !important;
+    padding-top: 3.5 !important;
 }
 
 /* ========================================
