@@ -212,30 +212,31 @@ body.dark-mode {
 }
 
 /* ========================================
-   HERO SECTION (TAMANHO EQUILIBRADO)
+   HERO SECTION (COMPACTA E REVISADA)
    ======================================== */
 .hero {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: var(--text-white);
-    padding: 5rem var(--spacing-md) 3rem;
+    padding: 2.5rem var(--spacing-md) 2rem;
     text-align: center;
+    width: 100%;
 }
 
 .hero-content {
-    max-width: 700px;
+    max-width: 600px;
     margin: 0 auto;
 }
 
 .hero-content h1 {
-    font-size: var(--font-size-3xl);
-    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--spacing-xs);
     font-weight: 700;
     line-height: 1.25;
 }
 
 .hero-content p {
-    font-size: var(--font-size-base);
-    margin-bottom: var(--spacing-xl);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-md);
     opacity: 0.95;
 }
 
@@ -788,8 +789,17 @@ canvas {
         grid-template-columns: 1fr;
     }
 
+    .hero {
+        padding: 1.75rem var(--spacing-sm) 1.5rem;
+    }
+
     .hero-content h1 {
-        font-size: var(--font-size-2xl);
+        font-size: var(--font-size-xl);
+    }
+
+    .hero-content p {
+        font-size: var(--font-size-xs);
+        margin-bottom: var(--spacing-sm);
     }
 
     .action-buttons .btn {
@@ -830,15 +840,15 @@ canvas {
     }
 
     .hero {
-        padding: 3rem var(--spacing-sm);
+        padding: 1.5rem var(--spacing-sm) 1.25rem;
     }
 
     .hero-content h1 {
-        font-size: var(--font-size-xl);
+        font-size: 1.35rem;
     }
 
     .hero-content p {
-        font-size: var(--font-size-base);
+        font-size: var(--font-size-xs);
     }
 
     .section {
