@@ -212,34 +212,30 @@ body.dark-mode {
 }
 
 /* ========================================
-   HERO SECTION (CORRIGIDA)
+   HERO SECTION (TAMANHO EQUILIBRADO)
    ======================================== */
 .hero {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: var(--text-white);
-    padding: 8rem var(--spacing-md) 6rem; /* Aumentado o espaçamento superior */
+    padding: 3.5rem var(--spacing-md) 3rem;
     text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 60vh; /* Garante uma altura mínima proporcional */
 }
 
 .hero-content {
-    max-width: 800px;
+    max-width: 700px;
     margin: 0 auto;
 }
 
 .hero-content h1 {
-    font-size: var(--font-size-4xl);
-    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-md);
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
 .hero-content p {
-    font-size: var(--font-size-lg);
-    margin-bottom: var(--spacing-2xl);
+    font-size: var(--font-size-base);
+    margin-bottom: var(--spacing-xl);
     opacity: 0.95;
 }
 
