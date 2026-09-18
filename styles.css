@@ -1,4 +1,20 @@
 /* ========================================
+   RESET COMPLETO E FIX DE TOPO
+   ======================================== */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+/* ========================================
    VARIÁVEIS CSS - Tema
    ======================================== */
 :root {
@@ -61,15 +77,6 @@ body.dark-mode {
     --border-color: #334155;
 }
 
-/* ========================================
-   RESET E ESTILOS GLOBAIS
-   ======================================== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 html {
     scroll-behavior: smooth;
 }
@@ -80,7 +87,6 @@ body {
     color: var(--text-dark);
     line-height: 1.6;
     transition: var(--transition);
-    overflow-x: hidden;
 }
 
 .container {
@@ -107,6 +113,7 @@ body {
     top: 0;
     z-index: 1000;
     transition: var(--transition);
+    margin-top: 0 !important;
 }
 
 .navbar-content {
@@ -320,7 +327,7 @@ body {
 }
 
 /* ========================================
-   FORMULÁRIO (Especialmente enxuto)
+   FORMULÁRIO
    ======================================== */
 .calculator-container {
     display: grid;
@@ -784,7 +791,6 @@ canvas {
         font-size: 16px !important; 
     }
 
-    /* Desativa animações pesadas e rotacionamento no mobile para suavidade total */
     .result-card,
     .dashboard-card,
     .chart-container {
