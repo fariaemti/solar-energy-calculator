@@ -212,13 +212,42 @@ body.dark-mode {
 }
 
 /* ========================================
-   HERO SECTION (SIMÉTRICA E EQUILIBRADA)
+   HERO SECTION (CENTRALIZADA E EQUILIBRADA)
    ======================================== */
 .hero {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: var(--text-white);
-    padding: 3.5rem var(--spacing-md); /* Espaçamento igual em cima e embaixo */
+    padding: 3rem var(--spacing-md); /* Espaçamento idêntico no topo e na base */
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-content {
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem; /* Distribui espaço uniforme entre título, subtítulo e botão */
+}
+
+.hero-content h1 {
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.hero-content p {
+    font-size: var(--font-size-base);
+    opacity: 0.95;
+    margin: 0;
+}
+
+.hero-content .btn {
+    margin-top: 0.5rem; /* Ajusta o respiro acima do botão */
 }
 
 /* ========================================
