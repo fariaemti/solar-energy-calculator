@@ -212,25 +212,35 @@ body.dark-mode {
 }
 
 /* ========================================
-   HERO SECTION
+   HERO SECTION (CORRIGIDA)
    ======================================== */
 .hero {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: var(--text-white);
-    padding: 5rem var(--spacing-md);
+    padding: 8rem var(--spacing-md) 6rem; /* Aumentado o espaçamento superior */
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh; /* Garante uma altura mínima proporcional */
+}
+
+.hero-content {
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .hero-content h1 {
     font-size: var(--font-size-4xl);
     margin-bottom: var(--spacing-lg);
     font-weight: 700;
+    line-height: 1.2;
 }
 
 .hero-content p {
     font-size: var(--font-size-lg);
     margin-bottom: var(--spacing-2xl);
-    opacity: 0.9;
+    opacity: 0.95;
 }
 
 /* ========================================
