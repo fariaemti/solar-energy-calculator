@@ -217,7 +217,7 @@ body.dark-mode {
 .hero {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: var(--text-white);
-    padding: 3.5rem var(--spacing-md) 3rem;
+    padding: 5rem var(--spacing-md) 3rem;
     text-align: center;
 }
 
