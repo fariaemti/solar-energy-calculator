@@ -1,5 +1,5 @@
 /* ========================================
-   RESET COMPLETO E FIX DE TOPO
+   RESET ABSOLUTO E REMOÇÃO DA BARRA SUPERIOR
    ======================================== */
 *, *::before, *::after {
     margin: 0;
@@ -7,11 +7,33 @@
     box-sizing: border-box;
 }
 
-html, body {
+html {
     margin: 0 !important;
     padding: 0 !important;
+    top: 0 !important;
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0 !important;
+    padding: 0 !important;
+    top: 0 !important;
     width: 100%;
     overflow-x: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    line-height: 1.6;
+    transition: var(--transition);
+}
+
+/* Evita o colapso de margem (Margin Collapse) no topo da página */
+body > *:first-child,
+header,
+.navbar,
+.hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
 }
 
 /* ========================================
@@ -75,18 +97,6 @@ body.dark-mode {
     --text-dark: #f1f5f9;
     --text-light: #94a3b8;
     --border-color: #334155;
-}
-
-html {
-    scroll-behavior: smooth;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--bg-light);
-    color: var(--text-dark);
-    line-height: 1.6;
-    transition: var(--transition);
 }
 
 .container {
